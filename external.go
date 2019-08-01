@@ -25,7 +25,7 @@ func getCurrentGasPrice() decimal.Decimal {
 type PKMResponse struct {
 	Status       bool            `json:"success"`
 	Data         PKMResponseData `json:"data"`
-	ErrorMessage string          `json:"error_message"`
+	ErrorMessage string          `json:"errMsg"`
 }
 
 type PKMResponseData struct {
