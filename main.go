@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"git.ddex.io/lib/ethrpc"
 	"git.ddex.io/lib/hotconfig"
 	"git.ddex.io/lib/log"
 	"git.ddex.io/lib/monitor"
@@ -21,6 +22,7 @@ type Config struct {
 }
 
 var config *Config
+var ethrpcClient *ethrpc.EthRPC
 
 func waitExitSignal(ctxStop context.CancelFunc) {
 	var exitSignal = make(chan os.Signal)
@@ -33,6 +35,7 @@ func waitExitSignal(ctxStop context.CancelFunc) {
 }
 
 func run() int {
+	config = &Config{}
 	ctx, stop := context.WithCancel(context.Background())
 
 	if os.Getenv("KUBE_NAMESPACE") != "" {
@@ -46,6 +49,8 @@ func run() int {
 			RetryPendingSecondsThreshold: 10,                // 10 s
 		}
 	}
+
+	ethrpcClient = ethrpc.New(config.EthereumNodeUrl)
 
 	log.AutoSetLogLevel()
 

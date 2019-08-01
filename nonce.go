@@ -30,7 +30,7 @@ func loadLastNonce(from string) int64 {
 		res = maxNonceInDB.Int64
 	}
 
-	logrus.Info("load last nonce for %s %d", from, res)
+	logrus.Infof("load last nonce for %s %d", from, res)
 
 	return res
 }

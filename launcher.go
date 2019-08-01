@@ -18,8 +18,6 @@ import (
 	"time"
 )
 
-var ethrpcClient = ethrpc.New(config.EthereumNodeUrl)
-
 // Encode encodes b as a hex string with 0x prefix.
 func Encode(b []byte) string {
 	enc := make([]byte, len(b)*2+2)
@@ -97,13 +95,13 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 		).Update(map[string]interface{}{
 			"status": pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
 		}).Error; err != nil {
-			logrus.Error("set retry status failed log: %+v err: %+v", log, err)
+			logrus.Errorf("set retry status failed log: %+v err: %+v", log, err)
 			tx.Rollback()
 			return err
 		}
 
 		if err = tx.Model(log).Update("status", status).Error; err != nil {
-			logrus.Error("set final status failed log: %+v err: %+v", log, err)
+			logrus.Errorf("set final status failed log: %+v err: %+v", log, err)
 			tx.Rollback()
 			return err
 		}
