@@ -99,7 +99,15 @@ func (*server) Notify(ctx context.Context, msg *pb.NotifyMessage) (*pb.NotifyRep
 
 	db.Where("hash = ?", msg.Hash).First(&log)
 
-	// TODO mark all item_type, item_id as success
+	if log.From == "" && log.ID == 0 {
+		return nil, fmt.Errorf("no such log")
+	}
+
+	err := handleLaunchLogStatus(&log, msg.Status)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return &pb.NotifyReply{}, nil
 }

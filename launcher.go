@@ -78,7 +78,7 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) error 
 	return nil
 }
 
-func handleLaunchLogStatus(log *LaunchLog, result bool) {
+func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 	log.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SUCCESS)]
 	var status string
 
@@ -88,7 +88,7 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) {
 		status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_FAILED)]
 	}
 
-	_ = executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
+	return executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 		if err = tx.Model(LaunchLog{}).Where(
 			"item_type = ? and item_id = ? and status = ? and hash != ?",
 			log.ItemType,

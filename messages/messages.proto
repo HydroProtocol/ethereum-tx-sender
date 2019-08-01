@@ -51,7 +51,7 @@ message HelloReply {}
 
 message NotifyMessage {
     string hash = 1;
-    string status = 2;
+    bool status = 2;
 }
 
 message NotifyReply {
