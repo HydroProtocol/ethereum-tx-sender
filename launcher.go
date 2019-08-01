@@ -146,15 +146,18 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 			}
 
 			gasLimit = uint64(float64(gas) * 1.2)
-
-			t.Gas = int(gasLimit)
+			launchLog.GasLimit = gasLimit
 			break
 		}
 
 		if err != nil {
 			return "", err
 		}
+	} else {
+		gasLimit = launchLog.GasLimit
 	}
+
+	t.Gas = int(gasLimit)
 
 	rawTxHex, err := pkmSign(&t)
 
@@ -168,8 +171,6 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 	if err != nil {
 		return "", err
 	}
-
-	launchLog.GasLimit = gasLimit
 
 	launchLog.Hash = sql.NullString{
 		String: hash,
