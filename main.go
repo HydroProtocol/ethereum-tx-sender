@@ -33,16 +33,6 @@ func waitExitSignal(ctxStop context.CancelFunc) {
 }
 
 func run() int {
-	log.AutoSetLogLevel()
-
-	connectDB()
-	defer db.Close()
-
-	ctx, stop := context.WithCancel(context.Background())
-
-	go waitExitSignal(stop)
-	go monitor.StartMonitorHttpServer(ctx)
-
 	if os.Getenv("KUBE_NAMESPACE") != "" {
 		hotconfig.Load(config, &hotconfig.Options{
 			Watch:   true,
@@ -54,6 +44,16 @@ func run() int {
 			RetryPendingSecondsThreshold: 10,                // 10 s
 		}
 	}
+
+	log.AutoSetLogLevel()
+
+	connectDB()
+	defer db.Close()
+
+	ctx, stop := context.WithCancel(context.Background())
+
+	go waitExitSignal(stop)
+	go monitor.StartMonitorHttpServer(ctx)
 
 	go startNightWatch(ctx) // TODO we may need a global watcher in the feature
 	go startGrpcServer(ctx)
