@@ -10,6 +10,8 @@ git.ddex.io/lib/ethrpc v0.0.0-20190731052521-4ffbd8ac3a2d h1:3OqbEjRoEoqykZ1cMr/
 git.ddex.io/lib/ethrpc v0.0.0-20190731052521-4ffbd8ac3a2d/go.mod h1:E381mqJ7NNk+EZTip5D35BFkaQjwlnPXY1/LDZem07M=
 git.ddex.io/lib/hotconfig v0.0.0-20190730081557-222025c539fb h1:T70IHnHgOUJRDk95ogz6HmDfviaQZhsQOVpLrrqNR8U=
 git.ddex.io/lib/hotconfig v0.0.0-20190730081557-222025c539fb/go.mod h1:1hHa6p/Zl0f7UVgOahtycjRdz0EiUlnd69mR+WLHYEM=
+git.ddex.io/lib/hotconfig v0.0.0-20190801064018-96253ff8d735 h1:hPjMiTEFdv5Hcn+BjHkIREiKCqSrosY+9itUcU9ZYr0=
+git.ddex.io/lib/hotconfig v0.0.0-20190801064018-96253ff8d735/go.mod h1:1hHa6p/Zl0f7UVgOahtycjRdz0EiUlnd69mR+WLHYEM=
 git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c h1:0bjzz4ztzf2cVsAnWmAdesO+TrF1wBiSagRrtCBxZ5c=
 git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c/go.mod h1:IuneNXaR8p6f4kh/iNobGONuHfZ/6iKcrUnU7V2HTrY=
 git.ddex.io/lib/monitor v0.0.0-20190730042322-bfe12938b7da h1:eTN4OZDKo9RAOomyNDfKHZ/Lu9+gHUCFaJ1Wtti410o=
