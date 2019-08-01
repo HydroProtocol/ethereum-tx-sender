@@ -33,6 +33,8 @@ func waitExitSignal(ctxStop context.CancelFunc) {
 }
 
 func run() int {
+	ctx, stop := context.WithCancel(context.Background())
+
 	if os.Getenv("KUBE_NAMESPACE") != "" {
 		hotconfig.Load(config, &hotconfig.Options{
 			Watch:   true,
@@ -49,8 +51,6 @@ func run() int {
 
 	connectDB()
 	defer db.Close()
-
-	ctx, stop := context.WithCancel(context.Background())
 
 	go waitExitSignal(stop)
 	go monitor.StartMonitorHttpServer(ctx)
