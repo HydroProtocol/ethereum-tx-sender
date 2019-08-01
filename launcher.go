@@ -123,7 +123,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 	var nonce uint64
 
 	if isNewLog {
-		nonce = getNextNonce(launchLog.From)
+		nonce = uint64(getNextNonce(launchLog.From))
 	} else {
 		nonce = uint64(launchLog.Nonce.Int64)
 	}

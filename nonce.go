@@ -2,7 +2,7 @@ package main
 
 import "database/sql"
 
-var nonceCache = make(map[string]uint64)
+var nonceCache = make(map[string]int64)
 
 func loadLastNonce(from string) int64 {
 	n, err := ethrpcClient.EthGetTransactionCount(from, "latest")
@@ -26,7 +26,7 @@ func loadLastNonce(from string) int64 {
 	}
 }
 
-func getNextNonce(from string) uint64 {
+func getNextNonce(from string) int64 {
 	if _, exist := nonceCache[from]; !exist {
 		nonce := loadLastNonce(from)
 		nonceCache[from] = nonce
