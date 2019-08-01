@@ -5,6 +5,7 @@ import (
 	"github.com/HydroProtocol/nights-watch"
 	"github.com/HydroProtocol/nights-watch/plugin"
 	"github.com/HydroProtocol/nights-watch/structs"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,6 +17,7 @@ func startNightWatch(ctx context.Context) {
 			return
 		}
 
+		spew.Dump(txAndReceipt)
 		var log LaunchLog
 		db.Where("hash = ?", txAndReceipt.Receipt.GetTxHash()).First(&log)
 

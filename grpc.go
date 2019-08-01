@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"net"
+	"strings"
 )
 
 //go:generate protoc -I.  --go_out=plugins=grpc:. ./messages/messages.proto
@@ -52,8 +53,8 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		Hash: sql.NullString{
 			Valid: false,
 		},
-		From:     msg.From,
-		To:       msg.To,
+		From:     strings.ToLower(msg.From),
+		To:       strings.ToLower(msg.To),
 		Value:    value,
 		GasPrice: gasPrice,
 		Nonce:    sql.NullInt64{},
