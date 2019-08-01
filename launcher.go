@@ -189,7 +189,8 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 		increaseNextNonce(launchLog.From)
 	}
 
-	logrus.Infof("send launcher log, hash: %s, rawTxString: %s, err: %v", hash, rawTxHex, err)
+	launchLog.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)]
+	logrus.Infof("send launcher log, hash: %s, rawTxString: %s", hash, rawTxHex)
 
 	return hash, err
 
@@ -211,6 +212,8 @@ func StartSendLoop(ctx context.Context) {
 				continue
 			}
 		}
+
+		logrus.Infof("%d created log to be send", len(launchLogs))
 
 		gasPrice := getCurrentGasPrice()
 
