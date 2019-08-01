@@ -1,6 +1,9 @@
 package main
 
-import "database/sql"
+import (
+	"database/sql"
+	"github.com/sirupsen/logrus"
+)
 
 var nonceCache = make(map[string]int64)
 
@@ -19,11 +22,17 @@ func loadLastNonce(from string) int64 {
 		return nonce
 	}
 
+	var res int64
+
 	if nonce > maxNonceInDB.Int64 {
-		return nonce
+		res = nonce
 	} else {
-		return maxNonceInDB.Int64
+		res = maxNonceInDB.Int64
 	}
+
+	logrus.Info("load last nonce for %s %d", from, res)
+
+	return res
 }
 
 func getNextNonce(from string) int64 {

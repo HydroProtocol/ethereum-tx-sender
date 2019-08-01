@@ -6,11 +6,10 @@ import (
 	"github.com/HydroProtocol/nights-watch/plugin"
 	"github.com/HydroProtocol/nights-watch/structs"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 func startNightWatch(ctx context.Context) {
-	w := nights_watch.NewHttpBasedEthWatcher(ctx, os.Getenv("ETHEREUM_NODE_URL"))
+	w := nights_watch.NewHttpBasedEthWatcher(ctx, config.EthereumNodeUrl)
 
 	w.RegisterTxReceiptPlugin(plugin.NewTxReceiptPlugin(func(txAndReceipt *structs.RemovableTxAndReceipt) {
 		if txAndReceipt.IsRemoved {

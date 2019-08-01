@@ -13,8 +13,11 @@ import (
 )
 
 type Config struct {
+	DatabaseURL                  string          `json:"database_url"`
 	MaxGasPriceForRetry          decimal.Decimal `json:"max_gas_price_for_retry"`
 	RetryPendingSecondsThreshold int             `json:"retry_pending_seconds_threshold"`
+	EthereumNodeUrl              string          `json:"ethereum_node_url"`
+	PkmUrl                       string          `json:"pkm_url"`
 }
 
 var config *Config

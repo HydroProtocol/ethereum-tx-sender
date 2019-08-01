@@ -8,7 +8,6 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"net/url"
-	"os"
 )
 
 var db *gorm.DB
@@ -21,18 +20,17 @@ const STATUS_SUCCESS = "success"
 type LaunchLog struct {
 	gorm.Model
 
-	Hash     sql.NullString
-	From     string
-	To       string
-	Value    decimal.Decimal `gorm:"type:text"`
-	GasLimit uint64
-	Status   string
-	GasPrice decimal.Decimal `gorm:"type:text"`
+	From     string          `gorm:"not null;type:text;index:idx_launch_logs_from"`
+	To       string          `gorm:"not null;type:text"`
+	Value    decimal.Decimal `gorm:"not null;type:text"`
+	GasLimit uint64          `gorm:"not null"`
+	Status   string          `gorm:"not nullindex:idx_launch_logs_status"`
+	GasPrice decimal.Decimal `gorm:"not null;type:text"`
+	Data     []byte          `gorm:"not null"`
+	ItemType string          `gorm:"not null;index:idx_launch_logs_item"`
+	ItemID   string          `gorm:"not null;index:idx_launch_logs_item"`
+	Hash     sql.NullString  `gorm:"unique_index"`
 	Nonce    sql.NullInt64
-	Data     []byte
-
-	ItemType string
-	ItemID   string
 }
 
 func getAllLogsWithStatus(status string) []*LaunchLog {
@@ -42,7 +40,11 @@ func getAllLogsWithStatus(status string) []*LaunchLog {
 }
 
 func connectDB() {
-	dbUrl := os.Getenv("DATABASE_URL")
+	dbUrl := config.DatabaseURL
+
+	if dbUrl == "" {
+		panic("empty db url")
+	}
 
 	_url, err := url.Parse(dbUrl)
 

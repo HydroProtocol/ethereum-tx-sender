@@ -14,12 +14,11 @@ import (
 	"math"
 	"math/big"
 	"math/rand"
-	"os"
 	"sort"
 	"time"
 )
 
-var ethrpcClient = ethrpc.New(os.Getenv("ETHEREUM_NODE_URL"))
+var ethrpcClient = ethrpc.New(config.EthereumNodeUrl)
 
 // Encode encodes b as a hex string with 0x prefix.
 func Encode(b []byte) string {
@@ -210,7 +209,7 @@ func StartSendLoop(ctx context.Context) {
 				logrus.Info("launcher send loop Exit")
 				return
 			case <-time.After(5 * time.Second):
-				logrus.Infof("launcher no logs need to be sent. sleep 5s")
+				logrus.Infof("no logs need to be sent. sleep 5s")
 				continue
 			}
 		}
@@ -259,7 +258,7 @@ func StartRetryLoop(ctx context.Context) {
 		needResendLogs := pickLaunchLogsPendingTooLong(latestLogsForEachNonce)
 
 		if len(needResendLogs) <= 0 {
-			logrus.Info("retry loop no logs need to be retried. sleep 10s")
+			logrus.Info("no logs need to be retried. sleep 10s")
 			<-time.After(10 * time.Second)
 			continue
 		}

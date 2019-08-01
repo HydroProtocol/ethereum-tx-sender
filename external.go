@@ -10,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	"os"
 )
 
 func getCurrentGasPrice() decimal.Decimal {
@@ -44,7 +43,7 @@ func pkmSign(t *ethrpc.T) (string, error) {
 		"nonce":     t.Nonce,
 	})
 
-	res, err := http.Post(os.Getenv("PKM_URL")+"/signTransaction", "application/json", bytes.NewReader(bts))
+	res, err := http.Post(config.PkmUrl+"/signTransaction", "application/json", bytes.NewReader(bts))
 
 	if err != nil {
 		return "", err
