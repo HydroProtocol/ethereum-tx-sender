@@ -9,7 +9,7 @@ var nonceCache = make(map[string]int64)
 
 func loadLastNonce(from string) int64 {
 	n, err := ethrpcClient.EthGetTransactionCount(from, "latest")
-	nonce := int64(n)
+	nonce := int64(n) - 1
 
 	if err != nil {
 		panic(err)
