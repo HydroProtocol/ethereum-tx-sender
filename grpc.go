@@ -16,14 +16,17 @@ import (
 type server struct{}
 
 func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateReply, error) {
-	value, err := decimal.NewFromString(msg.Value)
+	var err error
+	var value decimal.Decimal
 
-	if err != nil {
-		return nil, fmt.Errorf("convert value to decimal failed")
-	}
+	if msg.Value == "" {
+		value = decimal.Zero
+	} else {
+		value, err = decimal.NewFromString(msg.Value)
 
-	if err != nil {
-		return nil, fmt.Errorf("convert gas limit to decimal failed")
+		if err != nil {
+			return nil, fmt.Errorf("convert value to decimal failed")
+		}
 	}
 
 	var gasPrice decimal.Decimal
@@ -35,6 +38,14 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		if err != nil {
 			return nil, fmt.Errorf("convert gas price to decimal failed")
 		}
+	}
+
+	if msg.From[:2] != "0x" || len(msg.From) != 42 {
+		return nil, fmt.Errorf("`form` format error, not a valid ethereum address")
+	}
+
+	if msg.To[:2] != "0x" || len(msg.To) != 42 {
+		return nil, fmt.Errorf("`to` format error, not a valid ethereum address")
 	}
 
 	log := &LaunchLog{
