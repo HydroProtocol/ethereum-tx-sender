@@ -334,7 +334,7 @@ func determineGasPriceForRetryLaunchLog(launchLog *LaunchLog, longestPendingSecs
 	determinedPrice := decimal.Min(increasedGasPrice, maxGasPrice)
 	logrus.Infof("gas price for retry launch log(nonce: %v), suggest: %s, minRetry: %s, increasedGasPrice: %s, final: %s", launchLog.Nonce, suggestGasPrice, minRetryGasPrice, increasedGasPrice, determinedPrice)
 
-	return determinedPrice
+	return determinedPrice.Round(0)
 }
 
 func increaseGasPriceAccordingToPendingTime(pendingSeconds int, gasPrice decimal.Decimal) decimal.Decimal {
