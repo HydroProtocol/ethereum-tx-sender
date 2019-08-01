@@ -60,7 +60,7 @@ func pkmSign(t *ethrpc.T) (string, error) {
 	_ = json.Unmarshal([]byte(retStr), &resp)
 
 	if !resp.Status {
-		return "", fmt.Errorf("sign result error %s", resp.Data)
+		return "", fmt.Errorf("sign result error %s", resp.ErrorMessage)
 	}
 
 	return resp.Data.RawData, nil
