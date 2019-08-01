@@ -26,10 +26,15 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		return nil, fmt.Errorf("convert gas limit to decimal failed")
 	}
 
-	gasPrice, err := decimal.NewFromString(msg.GasPrice)
+	var gasPrice decimal.Decimal
 
-	if err != nil {
-		return nil, fmt.Errorf("convert gas price to decimal failed")
+	if msg.GasPrice == "" {
+		gasPrice = getCurrentGasPrice()
+	} else {
+		gasPrice, err = decimal.NewFromString(msg.GasPrice)
+		if err != nil {
+			return nil, fmt.Errorf("convert gas price to decimal failed")
+		}
 	}
 
 	log := &LaunchLog{
