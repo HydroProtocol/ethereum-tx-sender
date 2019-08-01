@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package messages;
+
+service Launcher {
+    rpc Create (CreateMessage) returns (CreateReply) {}
+    rpc Get (GetMessage) returns (GetReply) {}
+    rpc Notify (NotifyMessage) returns (NotifyReply) {}
+    rpc Hello (HelloMessage) returns (HelloReply) {}
+
+    // will push every changed launch log info to the subscriber
+    rpc Subscribe (stream SubscribeMessage) returns (stream SubscribeReply) {}
+}
+
+// The request message containing the user's name.
+message CreateMessage {
+    string from = 1;
+    string to = 2;
+    string value = 3;
+    bytes data = 4;
+    string gas_price = 5;
+    uint32 gas_limit = 6;
+    string item_type = 7;
+    string item_id = 8;
+}
+
+enum RequestStatus {
+    REQUEST_SUCCESSFUL = 0;
+    REQUEST_FAILED = 1;
+}
+
+enum LaunchLogStatus {
+    CREATED = 0;
+    RETRIED = 1;
+    PENDING = 2;
+
+    SUCCESS = 3; // ethereum node confirm success
+    FAILED = 4;  // ethereum node confirm failed
+
+    SIGN_FAILED = 5; // sign failed
+}
+
+// The response message containing the greetings
+message CreateReply {
+    RequestStatus status = 1;
+   string err_msg = 2;
+}
+
+message HelloMessage {}
+message HelloReply {}
+
+message NotifyMessage {
+    string hash = 1;
+    string status = 2;
+}
+
+message NotifyReply {
+    RequestStatus status = 1;
+}
+
+message Log {
+    string hash = 1;
+    string item_type = 2;
+    string item_id = 3;
+    LaunchLogStatus status = 4;
+    string gas_price = 5;
+    string gas_limit = 6;
+}
+
+message GetMessage {
+    string hash = 1;
+    string item_type = 2;
+    string item_id = 3;
+}
+
+message GetReply {
+    RequestStatus status = 1;
+    repeated Log data = 2;
+}
+
+message SubscribeMessage {}
+
+message SubscribeReply {
+    Log log = 1;
+}
