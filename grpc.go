@@ -69,7 +69,7 @@ func (*server) Get(ctx context.Context, msg *pb.GetMessage) (*pb.GetReply, error
 	} else if msg.ItemType != "" && msg.ItemId != "" {
 		db.Where("item_type = ? and item_id = ?", msg.ItemType, msg.ItemId).Find(&logs)
 	} else {
-		return nil, fmt.Errorf("Need hash or (item_typ, item_id)")
+		return nil, fmt.Errorf("Need hash or (item_type, item_id) msg: %v", msg)
 	}
 
 	var dataLogs []*pb.Log
