@@ -9,7 +9,7 @@ require (
 	git.ddex.io/lib/hotconfig v0.0.0-20190801064018-96253ff8d735
 	git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c
 	git.ddex.io/lib/monitor v0.0.0-20190730042322-bfe12938b7da
-	github.com/HydroProtocol/nights-watch v0.1.5
+	github.com/HydroProtocol/nights-watch v0.1.8
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
