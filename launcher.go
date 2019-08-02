@@ -145,6 +145,11 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 				continue
 			}
 
+			if gas == 0 {
+				launchLog.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)]
+				return "", fmt.Errorf("EthEstimateGas = 0")
+			}
+
 			gasLimit = uint64(float64(gas) * 1.2)
 			launchLog.GasLimit = gasLimit
 			break
