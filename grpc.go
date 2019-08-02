@@ -66,6 +66,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		To:       strings.ToLower(msg.To),
 		Value:    value,
 		GasPrice: gasPrice,
+		GasLimit: uint64(msg.GasLimit),
 		Nonce:    sql.NullInt64{},
 		Data:     msg.Data,
 		ItemID:   msg.ItemId,
