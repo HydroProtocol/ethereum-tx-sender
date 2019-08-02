@@ -49,6 +49,15 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		return nil, fmt.Errorf("`to` format error, not a valid ethereum address")
 	}
 
+	var count int
+	if err := db.Model(&LaunchLog{}).Where("item_type = ? and item_id = ?", msg.ItemType, msg.ItemId).Count(&count).Error; err != nil {
+		return nil, fmt.Errorf("get item_type and item_id count error %v", err)
+	}
+
+	if count > 0 {
+		return nil, fmt.Errorf("item_type and item_id exists !!")
+	}
+
 	log := &LaunchLog{
 		Hash: sql.NullString{
 			Valid: false,
@@ -132,7 +141,7 @@ func (*server) Notify(ctx context.Context, msg *pb.NotifyMessage) (*pb.NotifyRep
 func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
 	// TODO
 
-	return nil
+	return fmt.Errorf("The subscribe function is not implemented !!!!")
 }
 
 func startGrpcServer(ctx context.Context) {
