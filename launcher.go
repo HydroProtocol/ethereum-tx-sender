@@ -140,18 +140,12 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 	// if gas limit is empty
 	// try to get gas limitation with retry times
 	if launchLog.GasLimit == 0 {
-		for i := 0; i < 3; i++ {
-			gas, err := ethrpcClient.EthEstimateGas(t)
-			spew.Dump(gas, err)
+		for i := 0; i < 2; i++ {
+			var gas int
+			gas, err = ethrpcClient.EthEstimateGas(t)
+
 			if err != nil {
 				continue
-			}
-
-			if gas == 0 {
-				launchLog.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)]
-				return "", fmt.Errorf("EthEstimateGas = 0")
-			} else {
-				logrus.Info("EthEstimateGas for %d is %s", launchLog.ID, gas)
 			}
 
 			gasLimit = uint64(float64(gas) * 1.2)
@@ -160,6 +154,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 		}
 
 		if err != nil {
+			launchLog.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)]
 			return "", err
 		}
 	} else {
