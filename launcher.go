@@ -142,7 +142,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 	if launchLog.GasLimit == 0 {
 		for i := 0; i < 3; i++ {
 			gas, err := ethrpcClient.EthEstimateGas(t)
-
+			spew.Dump(gas, err)
 			if err != nil {
 				continue
 			}
