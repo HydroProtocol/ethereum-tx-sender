@@ -41,7 +41,7 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) error 
 
 	for i := 0; i < 5; i++ {
 		if tryTimes != 0 {
-			time.Sleep(time.Duration(rand.Intn(300)) * time.Millisecond)
+			time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 		}
 
 		tryTimes = tryTimes + 1
@@ -275,23 +275,9 @@ func StartRetryLoop(ctx context.Context) {
 
 			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs)
 
-			_, err := sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
-
-			if err != nil && strings.Contains(err.Error(), "nonce too low") {
-				// It means one of the tx with this nonce is finalized. Skip...
-				logrus.Info("launch_log %d retry return nonce too low. skip retry.")
-				continue
-			}
-
-			if err != nil {
-				monitor.Count("launcher_shoot_retry_failed")
-				logrus.Errorf("shoot retry launch log error id %d, err %v", launchLog.ID, err)
-				panic(err)
-			}
-
 			isNewLaunchLogCreated := false
 
-			err = executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
+			err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
 				// optimistic lock the retried launchlog
 				var reloadedLog LaunchLog
 				if er = tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", launchLog.ID).Select(&reloadedLog).Error; er != nil {
@@ -300,6 +286,14 @@ func StartRetryLoop(ctx context.Context) {
 
 				// if the log is no longer a pending status, skip the retry
 				if reloadedLog.Status != pendingStatusName {
+					return nil
+				}
+
+				_, er = sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
+
+				if er != nil && strings.Contains(er.Error(), "nonce too low") {
+					// It means one of the tx with this nonce is finalized. Skip...
+					logrus.Info("launch_log %d retry return nonce too low. skip")
 					return nil
 				}
 
@@ -313,7 +307,7 @@ func StartRetryLoop(ctx context.Context) {
 			})
 
 			if err != nil {
-				monitor.Count("launcher_retry_insert_failed")
+				monitor.Count("launcher_retry_failed")
 				logrus.Errorf("insert launch log error id %d, err %v", launchLog.ID, err)
 				panic(err)
 			}
@@ -424,10 +418,7 @@ func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
 		GasLimit: launchLog.GasLimit,
 		Data:     launchLog.Data,
 		Nonce:    launchLog.Nonce,
-		Hash: sql.NullString{
-			String: launchLog.Hash.String,
-			Valid:  true,
-		},
+		Hash:     launchLog.Hash,
 		GasPrice: launchLog.GasPrice,
 	}
 
