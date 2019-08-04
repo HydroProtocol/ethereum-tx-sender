@@ -8,7 +8,6 @@ import (
 	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
 	"git.ddex.io/lib/ethrpc"
 	"git.ddex.io/lib/monitor"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jinzhu/gorm"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -16,6 +15,7 @@ import (
 	"math/big"
 	"math/rand"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -135,7 +135,6 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 		Nonce:    int(nonce),
 	}
 
-	spew.Dump("launlog is", launchLog)
 	var gasLimit uint64
 	// if gas limit is empty
 	// try to get gas limitation with retry times
@@ -160,8 +159,6 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 	} else {
 		gasLimit = launchLog.GasLimit
 	}
-
-	spew.Dump("gasLimit", gasLimit)
 
 	t.Gas = int(gasLimit)
 
@@ -279,6 +276,12 @@ func StartRetryLoop(ctx context.Context) {
 			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs)
 
 			_, err := sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
+
+			if err != nil && strings.Contains(err.Error(), "nonce too low") {
+				// It means one of the tx with this nonce is finalized. Skip...
+				logrus.Info("launch_log %d retry return nonce too low. skip retry.")
+				continue
+			}
 
 			if err != nil {
 				monitor.Count("launcher_shoot_retry_failed")
