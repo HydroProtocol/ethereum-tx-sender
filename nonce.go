@@ -16,7 +16,7 @@ func loadLastNonce(from string) int64 {
 	}
 
 	var maxNonceInDB sql.NullInt64
-	db.Raw("select max(nonce) from launch_logs where from = ?", from).Scan(&maxNonceInDB)
+	db.Raw(`select max(nonce) from launch_logs where "from" = ?`, from).Scan(&maxNonceInDB)
 
 	if !maxNonceInDB.Valid {
 		return nonce
