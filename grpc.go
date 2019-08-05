@@ -8,8 +8,10 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"io"
 	"net"
 	"strings"
+	"sync"
 )
 
 //go:generate protoc -I.  --go_out=plugins=grpc:. ./messages/messages.proto
@@ -139,13 +141,90 @@ func (*server) Notify(ctx context.Context, msg *pb.NotifyMessage) (*pb.NotifyRep
 	return &pb.NotifyReply{}, nil
 }
 
-func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
-	// TODO
-
-	return fmt.Errorf("The subscribe function is not implemented !!!!")
+func getSubscribeHubKey(hash, itemType, itemId string) string {
+	return fmt.Sprintf("H:%s-T:%s-ID:%s", hash, itemType, itemId)
 }
 
+func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
+	key := getSubscribeHubKey(log.Hash.String, log.ItemType, log.ItemID)
+
+	data, ok := subscribeHub.data[key]
+
+	if !ok || data == nil {
+		return
+	}
+
+	for s, _ := range data {
+		_ = s.Send(&pb.SubscribeReply{
+			Status: status,
+		})
+	}
+}
+
+func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
+	for {
+		in, err := subscribeServer.Recv()
+
+		if err == io.EOF {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
+		logrus.Println("Received Subscribe value, Got Hash: %s, ItemType: %s, ItemId: %s"+in.Hash, in.ItemType, in.ItemId)
+
+		if in.Hash == "" && in.ItemType == "" && in.ItemId == "" {
+			return fmt.Errorf("need at lease (hash) or (itemType + itemId) needs to be provided")
+		}
+
+		key := getSubscribeHubKey(in.Hash, in.ItemType, in.ItemId)
+
+		subscribeHub.Register(key, subscribeServer)
+		defer subscribeHub.Remove(key, subscribeServer)
+	}
+}
+
+type SubscribeHub struct {
+	m    *sync.Mutex
+	data map[string]map[pb.Launcher_SubscribeServer]bool
+}
+
+func (sb *SubscribeHub) Register(key string, server pb.Launcher_SubscribeServer) {
+	sb.m.Lock()
+	defer sb.m.Unlock()
+
+	if _, ok := sb.data[key]; !ok {
+		sb.data[key] = make(map[pb.Launcher_SubscribeServer]bool)
+	}
+
+	sb.data[key][server] = true
+}
+
+func (sb *SubscribeHub) Remove(key string, server pb.Launcher_SubscribeServer) {
+	sb.m.Lock()
+	defer sb.m.Unlock()
+
+	if _, ok := sb.data[key]; !ok {
+		return
+	}
+
+	delete(sb.data[key], server)
+
+	if len(sb.data[key]) == 0 {
+		delete(sb.data, key)
+	}
+}
+
+var subscribeHub *SubscribeHub
+
 func startGrpcServer(ctx context.Context) {
+	subscribeHub = &SubscribeHub{
+		m:    &sync.Mutex{},
+		data: make(map[string]map[pb.Launcher_SubscribeServer]bool),
+	}
+
 	lis, err := net.Listen("tcp", ":3000")
 
 	if err != nil {

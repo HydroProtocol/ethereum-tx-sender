@@ -78,13 +78,16 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) error 
 
 func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 	log.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SUCCESS)]
-	var status string
+
+	var statusCode pb.LaunchLogStatus
 
 	if result {
-		status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SUCCESS)]
+		statusCode = pb.LaunchLogStatus_SUCCESS
 	} else {
-		status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_FAILED)]
+		statusCode = pb.LaunchLogStatus_FAILED
 	}
+
+	status := pb.LaunchLogStatus_name[int32(statusCode)]
 
 	return executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 		if err = tx.Model(LaunchLog{}).Where(
@@ -106,6 +109,8 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 			tx.Rollback()
 			return err
 		}
+
+		sendLogStatusToSubscriber(log, statusCode)
 
 		return nil
 	})
@@ -236,6 +241,8 @@ func StartSendLoop(ctx context.Context) {
 				// then the launch log will be saved for further investigate
 				if launchLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)] {
 					panic(err)
+				} else {
+					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SIGN_FAILED)
 				}
 			}
 

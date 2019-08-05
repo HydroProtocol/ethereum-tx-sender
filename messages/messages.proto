@@ -78,8 +78,12 @@ message GetReply {
     repeated Log data = 2;
 }
 
-message SubscribeMessage {}
+message SubscribeMessage {
+    string hash = 1;
+    string item_type = 2;
+    string item_id = 3;
+}
 
 message SubscribeReply {
-    Log log = 1;
+    LaunchLogStatus status = 1;
 }
