@@ -91,11 +91,12 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 
 	err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 		var reloadedLog LaunchLog
-		if err = tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", log.ID).Select(&reloadedLog).Error; err != nil {
+		if err = tx.Debug().Set("gorm:query_option", "FOR UPDATE").Where("id = ?", log.ID).Select(&reloadedLog).Error; err != nil {
 			return err
 		}
 
 		if reloadedLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)] {
+			logrus.Info("reloadedLog.Status", reloadedLog.Status)
 			return nil
 		}
 
