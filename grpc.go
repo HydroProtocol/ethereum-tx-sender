@@ -150,7 +150,7 @@ func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
 	key := getSubscribeHubKey(log.Hash.String, log.ItemType, log.ItemID)
 
 	data, ok := subscribeHub.data[key]
-	spew.Dump(data, ok)
+	spew.Dump(key, data, ok)
 	if !ok || data == nil {
 		return
 	}
@@ -185,7 +185,7 @@ func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
 		subscribeHub.Register(key, subscribeServer)
 		defer subscribeHub.Remove(key, subscribeServer)
 
-		spew.Dump(subscribeHub)
+		spew.Dump("subscribeHub.data", len(subscribeHub.data))
 	}
 }
 
