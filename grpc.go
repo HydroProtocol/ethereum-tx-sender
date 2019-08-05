@@ -142,12 +142,12 @@ func (*server) Notify(ctx context.Context, msg *pb.NotifyMessage) (*pb.NotifyRep
 	return &pb.NotifyReply{}, nil
 }
 
-func getSubscribeHubKey(hash, itemType, itemId string) string {
-	return fmt.Sprintf("H:%s-T:%s-ID:%s", hash, itemType, itemId)
+func getSubscribeHubKey(itemType, itemId string) string {
+	return fmt.Sprintf("Type:%s-ID:%s", itemType, itemId)
 }
 
 func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
-	key := getSubscribeHubKey(log.Hash.String, log.ItemType, log.ItemID)
+	key := getSubscribeHubKey(log.ItemType, log.ItemID)
 
 	data, ok := subscribeHub.data[key]
 	spew.Dump(key, data, ok)
@@ -179,7 +179,7 @@ func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
 			return fmt.Errorf("need at lease (hash) or (itemType + itemId) needs to be provided")
 		}
 
-		key := getSubscribeHubKey(in.Hash, in.ItemType, in.ItemId)
+		key := getSubscribeHubKey(in.ItemType, in.ItemId)
 		logrus.Printf("Received Subscribe value, key: %s", key)
 
 		subscribeHub.Register(key, subscribeServer)
