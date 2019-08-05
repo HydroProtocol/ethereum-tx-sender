@@ -184,6 +184,8 @@ func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
 
 		subscribeHub.Register(key, subscribeServer)
 		defer subscribeHub.Remove(key, subscribeServer)
+
+		spew.Dump(subscribeHub)
 	}
 }
 
