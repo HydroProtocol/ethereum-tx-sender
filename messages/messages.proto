@@ -87,4 +87,7 @@ message SubscribeMessage {
 message SubscribeReply {
     LaunchLogStatus status = 1;
     string hash = 2;
+    string item_type = 3;
+    string item_id = 4;
+    string errMsg = 5;
 }

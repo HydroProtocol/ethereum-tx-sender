@@ -242,12 +242,12 @@ func StartSendLoop(ctx context.Context) {
 			if err != nil {
 				monitor.Count("launcher_shoot_failed")
 				logrus.Errorf("shoot launch log error id %d, err %v, err msg: %s", launchLog.ID, err, err.Error())
-
 				// if it's signature error, do not panic
 				// then the launch log will be saved for further investigate
 				if launchLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)] {
 					panic(err)
 				} else {
+					launchLog.ErrMsg = err.Error()
 					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SIGN_FAILED)
 				}
 			}

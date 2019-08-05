@@ -155,8 +155,11 @@ func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
 
 	for s, _ := range data {
 		_ = s.Send(&pb.SubscribeReply{
-			Status: status,
-			Hash:   log.Hash.String,
+			Status:   status,
+			Hash:     log.Hash.String,
+			ItemId:   log.ItemID,
+			ItemType: log.ItemType,
+			ErrMsg:   log.ErrMsg,
 		})
 	}
 }
