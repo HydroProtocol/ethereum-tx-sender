@@ -45,6 +45,7 @@ func run() int {
 		})
 	} else {
 		config = &Config{
+			DatabaseURL:                  "postgres://localhost:5432/launcher",
 			MaxGasPriceForRetry:          decimal.New(5, 9), // 5 Gwei
 			RetryPendingSecondsThreshold: 10,                // 10 s
 		}

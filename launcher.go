@@ -91,7 +91,8 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 
 	err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 		var reloadedLog LaunchLog
-		if err = tx.Debug().Set("gorm:query_option", "FOR UPDATE").Where("id = ?", log.ID).Select(&reloadedLog).Error; err != nil {
+
+		if err = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", log.ID).Scan(&reloadedLog).Error; err != nil {
 			return err
 		}
 
@@ -303,7 +304,7 @@ func StartRetryLoop(ctx context.Context) {
 			err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
 				// optimistic lock the retried launchlog
 				var reloadedLog LaunchLog
-				if er = tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", launchLog.ID).Select(&reloadedLog).Error; er != nil {
+				if er = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", launchLog.ID).Scan(&reloadedLog).Error; er != nil {
 					return er
 				}
 
@@ -316,7 +317,7 @@ func StartRetryLoop(ctx context.Context) {
 
 				if er != nil && strings.Contains(er.Error(), "nonce too low") {
 					// It means one of the tx with this nonce is finalized. Skip...
-					logrus.Info("launch_log %d retry return nonce too low. skip")
+					logrus.Info("launch_log retry return nonce too low. skip")
 					return nil
 				}
 
@@ -358,7 +359,7 @@ func determineGasPriceForRetryLaunchLog(launchLog *LaunchLog, longestPendingSecs
 
 	maxGasPrice := config.MaxGasPriceForRetry
 	determinedPrice := decimal.Min(increasedGasPrice, maxGasPrice)
-	logrus.Debugln("gas price for retry launch log(nonce: %v), suggest: %s, minRetry: %s, increasedGasPrice: %s, final: %s", launchLog.Nonce, suggestGasPrice, minRetryGasPrice, increasedGasPrice, determinedPrice)
+	logrus.Debugf("gas price for retry launch log(nonce: %v), suggest: %s, minRetry: %s, increasedGasPrice: %s, final: %s", launchLog.Nonce, suggestGasPrice, minRetryGasPrice, increasedGasPrice, determinedPrice)
 
 	return determinedPrice.Round(0)
 }
