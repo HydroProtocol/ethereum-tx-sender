@@ -166,7 +166,7 @@ func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
 func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
 	for {
 		in, err := subscribeServer.Recv()
-
+		spew.Dump(fmt.Sprintf("err from recv %+v", err))
 		if err == io.EOF {
 			return nil
 		}
