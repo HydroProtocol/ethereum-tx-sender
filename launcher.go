@@ -358,7 +358,7 @@ func determineGasPriceForRetryLaunchLog(launchLog *LaunchLog, longestPendingSecs
 
 	maxGasPrice := config.MaxGasPriceForRetry
 	determinedPrice := decimal.Min(increasedGasPrice, maxGasPrice)
-	logrus.Infof("gas price for retry launch log(nonce: %v), suggest: %s, minRetry: %s, increasedGasPrice: %s, final: %s", launchLog.Nonce, suggestGasPrice, minRetryGasPrice, increasedGasPrice, determinedPrice)
+	logrus.Debugln("gas price for retry launch log(nonce: %v), suggest: %s, minRetry: %s, increasedGasPrice: %s, final: %s", launchLog.Nonce, suggestGasPrice, minRetryGasPrice, increasedGasPrice, determinedPrice)
 
 	return determinedPrice.Round(0)
 }
@@ -366,7 +366,7 @@ func determineGasPriceForRetryLaunchLog(launchLog *LaunchLog, longestPendingSecs
 func increaseGasPriceAccordingToPendingTime(pendingSeconds int, gasPrice decimal.Decimal) decimal.Decimal {
 	// after subtract 2 minutes, for every extra minute, we add 10%
 	increaseRatio := 0.1 * (math.Max(float64(pendingSeconds-2*60), 0) / 60)
-	logrus.Infoln("increaseGasPriceAccordingToPendingTime ratio:", increaseRatio)
+	logrus.Debugln("increaseGasPriceAccordingToPendingTime ratio:", increaseRatio)
 	gasAfterIncrease := gasPrice.Mul(decimal.NewFromFloat(1 + increaseRatio))
 
 	return gasAfterIncrease
