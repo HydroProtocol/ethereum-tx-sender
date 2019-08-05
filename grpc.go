@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -149,15 +150,16 @@ func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
 	key := getSubscribeHubKey(log.Hash.String, log.ItemType, log.ItemID)
 
 	data, ok := subscribeHub.data[key]
-
+	spew.Dump(data, ok)
 	if !ok || data == nil {
 		return
 	}
 
 	for s, _ := range data {
-		_ = s.Send(&pb.SubscribeReply{
+		spew.Dump(s.Send(&pb.SubscribeReply{
 			Status: status,
-		})
+			Hash:   log.Hash.String,
+		}))
 	}
 }
 

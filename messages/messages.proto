@@ -86,4 +86,5 @@ message SubscribeMessage {
 
 message SubscribeReply {
     LaunchLogStatus status = 1;
+    string hash = 2;
 }
