@@ -89,7 +89,7 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 
 	status := pb.LaunchLogStatus_name[int32(statusCode)]
 
-	return executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
+	err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 		if err = tx.Model(LaunchLog{}).Where(
 			"item_type = ? and item_id = ? and status = ? and hash != ?",
 			log.ItemType,
@@ -110,10 +110,16 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 			return err
 		}
 
-		sendLogStatusToSubscriber(log, statusCode)
-
 		return nil
 	})
+
+	if err != nil {
+		return err
+	}
+
+	sendLogStatusToSubscriber(log, statusCode)
+
+	return nil
 }
 
 func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {

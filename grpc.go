@@ -175,13 +175,12 @@ func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
 			return err
 		}
 
-		logrus.Println("Received Subscribe value, Got Hash: %s, ItemType: %s, ItemId: %s"+in.Hash, in.ItemType, in.ItemId)
-
 		if in.Hash == "" && in.ItemType == "" && in.ItemId == "" {
 			return fmt.Errorf("need at lease (hash) or (itemType + itemId) needs to be provided")
 		}
 
 		key := getSubscribeHubKey(in.Hash, in.ItemType, in.ItemId)
+		logrus.Printf("Received Subscribe value, key: %s", key)
 
 		subscribeHub.Register(key, subscribeServer)
 		defer subscribeHub.Remove(key, subscribeServer)
