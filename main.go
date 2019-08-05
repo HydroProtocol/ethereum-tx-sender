@@ -60,6 +60,7 @@ func run() int {
 	go waitExitSignal(stop)
 	go monitor.StartMonitorHttpServer(ctx)
 
+	go tryLoadPendingTxStatus(ctx)
 	go startNightWatch(ctx) // TODO we may need a global watcher in the feature
 	go startGrpcServer(ctx)
 	StartLauncher(ctx)

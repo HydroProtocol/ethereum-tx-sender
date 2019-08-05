@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"math/rand"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -77,8 +78,6 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) error 
 }
 
 func handleLaunchLogStatus(log *LaunchLog, result bool) error {
-	log.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SUCCESS)]
-
 	var statusCode pb.LaunchLogStatus
 
 	if result {
@@ -88,8 +87,18 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 	}
 
 	status := pb.LaunchLogStatus_name[int32(statusCode)]
+	log.Status = status
 
 	err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
+		var reloadedLog LaunchLog
+		if err = tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", log.ID).Select(&reloadedLog).Error; err != nil {
+			return err
+		}
+
+		if reloadedLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)] {
+			return nil
+		}
+
 		if err = tx.Model(LaunchLog{}).Where(
 			"item_type = ? and item_id = ? and status = ? and hash != ?",
 			log.ItemType,
@@ -443,6 +452,36 @@ func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
 	// err = updateTransactionAndTrades(newLog)
 
 	return nil
+}
+
+func tryLoadPendingTxStatus(ctx context.Context) {
+	pendingStatusName := pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)]
+	launchLogs := getAllLogsWithStatus(pendingStatusName)
+
+	logrus.Infof("fetch pending logs status after start, count: %d", len(launchLogs))
+
+	for _, log := range launchLogs {
+
+		receipt, err := ethrpcClient.EthGetTransactionReceipt(log.Hash.String)
+
+		if err != nil {
+			logrus.Errorf("log %s receipt request error %+v", log.Hash.String, err)
+			continue
+		}
+
+		var result string
+		status, _ := strconv.ParseInt(receipt.Status, 0, 0)
+
+		if status == 1 {
+			result = "successful"
+			handleLaunchLogStatus(log, true)
+		} else {
+			result = "failed"
+			handleLaunchLogStatus(log, false)
+		}
+
+		logrus.Errorf("log %s receipt request finial %s", log.Hash.String, result)
+	}
 }
 
 func StartLauncher(ctx context.Context) {
