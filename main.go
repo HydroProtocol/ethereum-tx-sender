@@ -61,7 +61,9 @@ func run() int {
 	go waitExitSignal(stop)
 	go monitor.StartMonitorHttpServer(ctx)
 
+	// reload pending tx right after start
 	go tryLoadPendingTxStatus(ctx)
+	go startDatabaseExporter(ctx)
 	go startNightWatch(ctx) // TODO we may need a global watcher in the feature
 	go startGrpcServer(ctx)
 	StartLauncher(ctx)
