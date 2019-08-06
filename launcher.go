@@ -111,13 +111,11 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 			"status": pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
 		}).Error; err != nil {
 			logrus.Errorf("set retry status failed log: %+v err: %+v", log, err)
-			tx.Rollback()
 			return err
 		}
 
 		if err = tx.Model(log).Update("status", status).Error; err != nil {
 			logrus.Errorf("set final status failed log: %+v err: %+v", log, err)
-			tx.Rollback()
 			return err
 		}
 
