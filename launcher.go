@@ -313,6 +313,12 @@ func StartRetryLoop(ctx context.Context) {
 					return nil
 				}
 
+				// This update is important
+				// We have to make some changes to fail other concurrent transactions
+				if er := tx.Model(&reloadedLog).Update("updated_at", time.Now().Unix()).Error; er != nil {
+					return er
+				}
+
 				_, er = sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
 
 				if er != nil && strings.Contains(er.Error(), "nonce too low") {
