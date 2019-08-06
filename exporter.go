@@ -22,6 +22,7 @@ func startDatabaseExporter(ctx context.Context) {
 				longPendingLogCount += 1
 			}
 		}
-		monitor.Value("long_pending_log", float64(len(launchLogs)))
+
+		monitor.Value("long_pending_log", float64(longPendingLogCount))
 	}
 }
