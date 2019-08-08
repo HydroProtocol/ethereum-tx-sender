@@ -61,7 +61,6 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 			time.Sleep(300 * time.Millisecond)
 
 			if reloadedLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)] {
-				logrus.Info("reloadedLog.Status", reloadedLog.Status)
 				return nil
 			}
 

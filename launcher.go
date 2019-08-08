@@ -37,7 +37,7 @@ func decimalToBigInt(d decimal.Decimal) *big.Int {
 	return n
 }
 
-func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) error {
+func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) (err error) {
 	tryTimes := 0
 
 	for i := 0; i < 5; i++ {
@@ -49,11 +49,11 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) error 
 
 		if tryTimes > 3 {
 			logrus.Errorf("tx finial failed after several retries")
-			return fmt.Errorf("tx finial failed after several retries")
+			return
 		}
 
 		tx := db.Begin()
-		err := tx.Exec(`set transaction isolation level repeatable read`).Error
+		err = tx.Exec(`set transaction isolation level repeatable read`).Error
 
 		if err != nil {
 			tx.Rollback()
@@ -74,7 +74,7 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) error 
 		break
 	}
 
-	return nil
+	return
 }
 
 func handleLaunchLogStatus(log *LaunchLog, result bool) error {
@@ -97,7 +97,6 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 		}
 
 		if reloadedLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)] {
-			logrus.Info("reloadedLog.Status", reloadedLog.Status)
 			return nil
 		}
 
@@ -486,7 +485,7 @@ func tryLoadPendingTxStatus(ctx context.Context) {
 			err = handleLaunchLogStatus(log, false)
 		}
 
-		logrus.Info("log %s receipt request finial %s, err: %+v", log.Hash.String, result, err)
+		logrus.Infof("log %s receipt request finial %s, err: %+v", log.Hash.String, result, err)
 	}
 }
 
