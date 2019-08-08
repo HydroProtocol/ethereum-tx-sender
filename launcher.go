@@ -284,22 +284,46 @@ func StartRetryLoop(ctx context.Context) {
 		needResendLogs := pickLaunchLogsPendingTooLong(latestLogsForEachNonce)
 
 		if len(needResendLogs) <= 0 {
-			logrus.Info("no logs need to be retried. sleep 10s")
-			<-time.After(10 * time.Second)
-			continue
+			select {
+			case <-ctx.Done():
+				logrus.Info("launcher retry loop Exit")
+				return
+			case <-time.After(10 * time.Second):
+				logrus.Info("no logs need to be retried. sleep 10s")
+				continue
+			}
 		}
 
 		logrus.Infof("resending long pending logs, num: %d", len(needResendLogs))
 
 		for _, launchLog := range needResendLogs {
-			start := time.Now()
+			// try to load launch log before retry
+			receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
 
+			// if we can get the status
+			if err == nil && receipt != nil {
+				var result string
+				status, _ := strconv.ParseInt(receipt.Status, 0, 0)
+
+				if status == 1 {
+					result = "successful"
+					err = handleLaunchLogStatus(launchLog, true)
+				} else {
+					result = "failed"
+					err = handleLaunchLogStatus(launchLog, false)
+				}
+
+				logrus.Infof("log %s receipt request finial %s before retry, err: %+v", launchLog.Hash.String, result, err)
+				continue
+			}
+
+			start := time.Now()
 			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs)
 
 			isNewLaunchLogCreated := false
 
-			err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
-				// optimistic lock the retried launchlog
+			err = executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
+				// optimistic lock the retried launchlog g
 				var reloadedLog LaunchLog
 				if er = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", launchLog.ID).Scan(&reloadedLog).Error; er != nil {
 					return er
@@ -457,36 +481,6 @@ func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
 	// err = updateTransactionAndTrades(newLog)
 
 	return nil
-}
-
-func tryLoadPendingTxStatus(ctx context.Context) {
-	pendingStatusName := pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)]
-	launchLogs := getAllLogsWithStatus(pendingStatusName)
-
-	logrus.Infof("fetch pending logs status after start, count: %d", len(launchLogs))
-
-	for _, log := range launchLogs {
-
-		receipt, err := ethrpcClient.EthGetTransactionReceipt(log.Hash.String)
-
-		if err != nil {
-			logrus.Errorf("log %s receipt request error %+v", log.Hash.String, err)
-			continue
-		}
-
-		var result string
-		status, _ := strconv.ParseInt(receipt.Status, 0, 0)
-
-		if status == 1 {
-			result = "successful"
-			err = handleLaunchLogStatus(log, true)
-		} else {
-			result = "failed"
-			err = handleLaunchLogStatus(log, false)
-		}
-
-		logrus.Infof("log %s receipt request finial %s, err: %+v", log.Hash.String, result, err)
-	}
 }
 
 func StartLauncher(ctx context.Context) {
