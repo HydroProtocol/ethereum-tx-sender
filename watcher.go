@@ -24,16 +24,17 @@ func startNightWatch(ctx context.Context) {
 		}
 
 		var result string
+		var err error
 
 		if txAndReceipt.Receipt.GetResult() {
 			result = "successful"
-			handleLaunchLogStatus(&log, true)
+			err = handleLaunchLogStatus(&log, true)
 		} else {
 			result = "failed"
-			handleLaunchLogStatus(&log, false)
+			err = handleLaunchLogStatus(&log, false)
 		}
 
-		logrus.Infof("tx %s result: %s", txAndReceipt.Receipt.GetTxHash(), result)
+		logrus.Infof("tx %s err: %+v result: %s", txAndReceipt.Receipt.GetTxHash(), err, result)
 	}))
 
 	_ = w.RunTillExit()

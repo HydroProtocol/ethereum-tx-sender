@@ -480,13 +480,13 @@ func tryLoadPendingTxStatus(ctx context.Context) {
 
 		if status == 1 {
 			result = "successful"
-			handleLaunchLogStatus(log, true)
+			err = handleLaunchLogStatus(log, true)
 		} else {
 			result = "failed"
-			handleLaunchLogStatus(log, false)
+			err = handleLaunchLogStatus(log, false)
 		}
 
-		logrus.Errorf("log %s receipt request finial %s", log.Hash.String, result)
+		logrus.Info("log %s receipt request finial %s, err: %+v", log.Hash.String, result, err)
 	}
 }
 
