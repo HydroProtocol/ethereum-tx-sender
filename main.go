@@ -56,6 +56,7 @@ func run() int {
 	log.AutoSetLogLevel()
 
 	connectDB()
+	db.LogMode(true)
 	defer db.Close()
 
 	go waitExitSignal(stop)
