@@ -39,6 +39,7 @@ func pkmSign(t *ethrpc.T) (string, error) {
 		"to":        t.To,
 		"data":      t.Data,
 		"gas_price": t.GasPrice,
+		"amount":    t.Value,
 		"gas_limit": t.Gas,
 		"nonce":     t.Nonce,
 	})
