@@ -188,15 +188,21 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 		return "", err
 	}
 
-	hash, err := ethrpcClient.EthSendRawTransaction(rawTxHex)
+	hash := EncodeHex(Keccak256(DecodeHex(rawTxHex)))
+
+	launchLog.Hash = sql.NullString{
+		String: hash,
+		Valid:  true,
+	}
+
+	hashOnChain, err := ethrpcClient.EthSendRawTransaction(rawTxHex)
 
 	if err != nil {
 		return "", err
 	}
 
-	launchLog.Hash = sql.NullString{
-		String: hash,
-		Valid:  true,
+	if hashOnChain != hash {
+		logrus.Fatalf("hashOnChain != hash, %s, %s", hashOnChain, hash)
 	}
 
 	launchLog.GasPrice = gasPrice
@@ -217,6 +223,37 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 
 	return hash, err
 
+}
+
+func tryLoadLaunchLogReceipt(launchLog *LaunchLog) bool {
+	receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
+
+	if err != nil {
+		return false
+	}
+
+	if receipt == nil {
+		return false
+	}
+
+	var result string
+	status, _ := strconv.ParseInt(receipt.Status, 0, 0)
+
+	if status == 1 {
+		result = "successful"
+		err = handleLaunchLogStatus(launchLog, true)
+	} else {
+		result = "failed"
+		err = handleLaunchLogStatus(launchLog, false)
+	}
+
+	logrus.Infof("log %s receipt request finial %s, err: %+v", launchLog.Hash.String, result, err)
+
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 func StartSendLoop(ctx context.Context) {
@@ -245,16 +282,21 @@ func StartSendLoop(ctx context.Context) {
 
 			launchLog := launchLogs[i]
 
+			if launchLog.Hash.Valid {
+				if ok := tryLoadLaunchLogReceipt(launchLog); ok {
+					continue
+				}
+			}
+
 			_, err := sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
 
 			if err != nil {
 				monitor.Count("launcher_shoot_failed")
 				logrus.Errorf("shoot launch log error id %d, err %v, err msg: %s", launchLog.ID, err, err.Error())
-				// if it's signature error, do not panic
+
+				// if it's signature error
 				// then the launch log will be saved for further investigate
-				if launchLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)] {
-					panic(err)
-				} else {
+				if launchLog.Status == pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)] {
 					launchLog.ErrMsg = err.Error()
 					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SIGN_FAILED)
 				}
@@ -295,25 +337,10 @@ func StartRetryLoop(ctx context.Context) {
 		}
 
 		logrus.Infof("resending long pending logs, num: %d", len(needResendLogs))
-
+		var err error
 		for _, launchLog := range needResendLogs {
 			// try to load launch log before retry
-			receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
-
-			// if we can get the status
-			if err == nil && receipt != nil {
-				var result string
-				status, _ := strconv.ParseInt(receipt.Status, 0, 0)
-
-				if status == 1 {
-					result = "successful"
-					err = handleLaunchLogStatus(launchLog, true)
-				} else {
-					result = "failed"
-					err = handleLaunchLogStatus(launchLog, false)
-				}
-
-				logrus.Infof("log %s receipt request finial %s before retry, err: %+v", launchLog.Hash.String, result, err)
+			if ok := tryLoadLaunchLogReceipt(launchLog); ok {
 				continue
 			}
 

@@ -8,8 +8,6 @@ git.ddex.io/infrastructure/ethereum-gas-price v0.0.0-20190730062510-a8a5d1328186
 git.ddex.io/infrastructure/ethereum-gas-price v0.0.0-20190730062510-a8a5d1328186/go.mod h1:+EkXhqMMSiHfnQ0/XlzZTje/29w5KRmVtxMggf2R5WM=
 git.ddex.io/lib/ethrpc v0.0.0-20190731052521-4ffbd8ac3a2d h1:3OqbEjRoEoqykZ1cMr/esnn3HD3N4nXnRMAIPHnDNiU=
 git.ddex.io/lib/ethrpc v0.0.0-20190731052521-4ffbd8ac3a2d/go.mod h1:E381mqJ7NNk+EZTip5D35BFkaQjwlnPXY1/LDZem07M=
-git.ddex.io/lib/hotconfig v0.0.0-20190730081557-222025c539fb h1:T70IHnHgOUJRDk95ogz6HmDfviaQZhsQOVpLrrqNR8U=
-git.ddex.io/lib/hotconfig v0.0.0-20190730081557-222025c539fb/go.mod h1:1hHa6p/Zl0f7UVgOahtycjRdz0EiUlnd69mR+WLHYEM=
 git.ddex.io/lib/hotconfig v0.0.0-20190801064018-96253ff8d735 h1:hPjMiTEFdv5Hcn+BjHkIREiKCqSrosY+9itUcU9ZYr0=
 git.ddex.io/lib/hotconfig v0.0.0-20190801064018-96253ff8d735/go.mod h1:1hHa6p/Zl0f7UVgOahtycjRdz0EiUlnd69mR+WLHYEM=
 git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c h1:0bjzz4ztzf2cVsAnWmAdesO+TrF1wBiSagRrtCBxZ5c=
@@ -20,8 +18,6 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/HydroProtocol/hydro-sdk-backend v0.0.39 h1:bjPY4BFV6HeS2uyimtxM47FX9oi5XQ6dMrqClKlBlrM=
 github.com/HydroProtocol/hydro-sdk-backend v0.0.39/go.mod h1:W65yZJcRbBL1jcvJmduFnPqYJuKB7ifzW0OpHX/DWMg=
-github.com/HydroProtocol/nights-watch v0.1.5 h1:JNuYBqj7LWV0NPDO7WoL4apTTj+yy/bHKoWmYgDbo3E=
-github.com/HydroProtocol/nights-watch v0.1.5/go.mod h1:MCcC2AJYQhcRA2N6uGeDJmbxRWO+zNk2BqFfrLGOOrI=
 github.com/HydroProtocol/nights-watch v0.1.8 h1:+EzI1nJL9l/FhEgmi+Bh19U67D95ZKSDAWfA0GdIi1M=
 github.com/HydroProtocol/nights-watch v0.1.8/go.mod h1:MCcC2AJYQhcRA2N6uGeDJmbxRWO+zNk2BqFfrLGOOrI=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=

@@ -44,7 +44,7 @@ func connectDB() {
 	dbUrl := config.DatabaseURL
 
 	if dbUrl == "" {
-		panic("empty db url")
+		logrus.Fatal("empty db url")
 	}
 
 	_url, err := url.Parse(dbUrl)
