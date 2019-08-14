@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	cloud.google.com/go v0.43.0 // indirect
-	git.ddex.io/infrastructure/ethereum-gas-price v0.0.0-20190730062510-a8a5d1328186
+	git.ddex.io/infrastructure/ethereum-gas-price v0.0.0-20190814104721-5fb309ac0c78
 	git.ddex.io/lib/ethrpc v0.0.0-20190731052521-4ffbd8ac3a2d
 	git.ddex.io/lib/hotconfig v0.0.0-20190801064018-96253ff8d735
 	git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c
