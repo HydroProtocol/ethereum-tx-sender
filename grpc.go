@@ -132,6 +132,7 @@ func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
 	key := getSubscribeHubKey(log.ItemType, log.ItemID)
 
 	data, ok := subscribeHub.data[key]
+
 	if !ok || data == nil {
 		return
 	}

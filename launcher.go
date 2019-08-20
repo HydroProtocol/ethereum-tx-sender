@@ -109,7 +109,8 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int) error {
 			pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)],
 			log.Hash,
 		).Update(map[string]interface{}{
-			"status": pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
+			"status":   pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
+			"gas_used": gasUsed,
 		}).Error; err != nil {
 			logrus.Errorf("set retry status failed log: %+v err: %+v", log, err)
 			return err
