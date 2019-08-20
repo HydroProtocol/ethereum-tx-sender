@@ -28,10 +28,10 @@ func TestWathcher(t *testing.T) {
 
 		if txAndReceipt.Receipt.GetResult() {
 			result = "successful"
-			handleLaunchLogStatus(&log, true)
+			handleLaunchLogStatus(&log, true, 0)
 		} else {
 			result = "failed"
-			handleLaunchLogStatus(&log, false)
+			handleLaunchLogStatus(&log, false, 0)
 		}
 
 		logrus.Infof("tx %s result: %s", txAndReceipt.Receipt.GetTxHash(), result)

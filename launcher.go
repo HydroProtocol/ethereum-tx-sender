@@ -77,7 +77,7 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) (err e
 	return
 }
 
-func handleLaunchLogStatus(log *LaunchLog, result bool) error {
+func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int) error {
 	var statusCode pb.LaunchLogStatus
 
 	if result {
@@ -87,7 +87,9 @@ func handleLaunchLogStatus(log *LaunchLog, result bool) error {
 	}
 
 	status := pb.LaunchLogStatus_name[int32(statusCode)]
+
 	log.Status = status
+	log.GasUsed = uint64(gasUsed)
 
 	err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 		var reloadedLog LaunchLog
@@ -239,12 +241,14 @@ func tryLoadLaunchLogReceipt(launchLog *LaunchLog) bool {
 	var result string
 	status, _ := strconv.ParseInt(receipt.Status, 0, 0)
 
+	gasUsed := receipt.GasUsed
+
 	if status == 1 {
 		result = "successful"
-		err = handleLaunchLogStatus(launchLog, true)
+		err = handleLaunchLogStatus(launchLog, true, gasUsed)
 	} else {
 		result = "failed"
-		err = handleLaunchLogStatus(launchLog, false)
+		err = handleLaunchLogStatus(launchLog, false, gasUsed)
 	}
 
 	logrus.Infof("log %s receipt request finial %s, err: %+v", launchLog.Hash.String, result, err)

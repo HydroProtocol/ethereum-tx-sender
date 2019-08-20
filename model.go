@@ -24,7 +24,8 @@ type LaunchLog struct {
 	To       string          `gorm:"not null;type:text"`
 	Value    decimal.Decimal `gorm:"not null;type:text"`
 	GasLimit uint64          `gorm:"not null"`
-	Status   string          `gorm:"not nullindex:idx_launch_logs_status"`
+	GasUsed  uint64          `gorm:"not null;default:0"`
+	Status   string          `gorm:"not null;index:idx_launch_logs_status"`
 	GasPrice decimal.Decimal `gorm:"not null;type:text"`
 	Data     []byte          `gorm:"not null"`
 	ItemType string          `gorm:"not null;index:idx_launch_logs_item"`

@@ -119,26 +119,9 @@ func (*server) Get(ctx context.Context, msg *pb.GetMessage) (*pb.GetReply, error
 	}, nil
 }
 
+// the launcher has it's own watcher, no need to notify
 func (*server) Notify(ctx context.Context, msg *pb.NotifyMessage) (*pb.NotifyReply, error) {
-	var log LaunchLog
-
-	if msg.Hash == "" {
-		return nil, fmt.Errorf("need hash")
-	}
-
-	db.Where("hash = ?", msg.Hash).First(&log)
-
-	if log.From == "" && log.ID == 0 {
-		return nil, fmt.Errorf("no such log")
-	}
-
-	err := handleLaunchLogStatus(&log, msg.Status)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.NotifyReply{}, nil
+	return nil, fmt.Errorf("no implement")
 }
 
 func getSubscribeHubKey(itemType, itemId string) string {
