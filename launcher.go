@@ -77,7 +77,7 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) (err e
 	return
 }
 
-func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int) error {
+func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt int) error {
 	var statusCode pb.LaunchLogStatus
 
 	if result {
@@ -90,6 +90,7 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int) error {
 
 	log.Status = status
 	log.GasUsed = uint64(gasUsed)
+	log.ExecutedAt = uint64(executedAt)
 
 	err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 		var reloadedLog LaunchLog
@@ -109,8 +110,9 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int) error {
 			pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)],
 			log.Hash,
 		).Update(map[string]interface{}{
-			"status":   pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
-			"gas_used": gasUsed,
+			"status":      pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
+			"gas_used":    gasUsed,
+			"executed_at": executedAt,
 		}).Error; err != nil {
 			logrus.Errorf("set retry status failed log: %+v err: %+v", log, err)
 			return err
@@ -244,12 +246,20 @@ func tryLoadLaunchLogReceipt(launchLog *LaunchLog) bool {
 
 	gasUsed := receipt.GasUsed
 
+	block, err := ethrpcClient.EthGetBlockByNumber(receipt.BlockNumber, false)
+
+	if err != nil {
+		return false
+	}
+
+	executedAt := block.Timestamp
+
 	if status == 1 {
 		result = "successful"
-		err = handleLaunchLogStatus(launchLog, true, gasUsed)
+		err = handleLaunchLogStatus(launchLog, true, gasUsed, executedAt)
 	} else {
 		result = "failed"
-		err = handleLaunchLogStatus(launchLog, false, gasUsed)
+		err = handleLaunchLogStatus(launchLog, false, gasUsed, executedAt)
 	}
 
 	logrus.Infof("log %s receipt request finial %s, err: %+v", launchLog.Hash.String, result, err)

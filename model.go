@@ -20,19 +20,20 @@ const STATUS_SUCCESS = "success"
 type LaunchLog struct {
 	gorm.Model
 
-	From     string          `gorm:"not null;type:text;index:idx_launch_logs_from"`
-	To       string          `gorm:"not null;type:text"`
-	Value    decimal.Decimal `gorm:"not null;type:text"`
-	GasLimit uint64          `gorm:"not null"`
-	GasUsed  uint64          `gorm:"not null;default:0"`
-	Status   string          `gorm:"not null;index:idx_launch_logs_status"`
-	GasPrice decimal.Decimal `gorm:"not null;type:text"`
-	Data     []byte          `gorm:"not null"`
-	ItemType string          `gorm:"not null;index:idx_launch_logs_item"`
-	ItemID   string          `gorm:"not null;index:idx_launch_logs_item"`
-	Hash     sql.NullString  `gorm:"unique_index"`
-	ErrMsg   string          `gorm:"type:text"`
-	Nonce    sql.NullInt64
+	From       string          `gorm:"not null;type:text;index:idx_launch_logs_from"`
+	To         string          `gorm:"not null;type:text"`
+	Value      decimal.Decimal `gorm:"not null;type:text"`
+	GasLimit   uint64          `gorm:"not null"`
+	GasUsed    uint64          `gorm:"not null;default:0"`
+	ExecutedAt uint64          `gorm:"not null;default:0"`
+	Status     string          `gorm:"not null;index:idx_launch_logs_status"`
+	GasPrice   decimal.Decimal `gorm:"not null;type:text"`
+	Data       []byte          `gorm:"not null"`
+	ItemType   string          `gorm:"not null;index:idx_launch_logs_item"`
+	ItemID     string          `gorm:"not null;index:idx_launch_logs_item"`
+	Hash       sql.NullString  `gorm:"unique_index"`
+	ErrMsg     string          `gorm:"type:text"`
+	Nonce      sql.NullInt64
 }
 
 func getAllLogsWithStatus(status string) []*LaunchLog {

@@ -105,11 +105,13 @@ func (*server) Get(ctx context.Context, msg *pb.GetMessage) (*pb.GetReply, error
 
 	for _, l := range logs {
 		dataLogs = append(dataLogs, &pb.Log{
-			Hash:     l.Hash.String,
-			ItemId:   l.ItemID,
-			ItemType: l.ItemType,
-			Status:   pb.LaunchLogStatus(pb.LaunchLogStatus_value[l.Status]),
-			GasPrice: l.GasPrice.String(),
+			Hash:       l.Hash.String,
+			ItemId:     l.ItemID,
+			ItemType:   l.ItemType,
+			Status:     pb.LaunchLogStatus(pb.LaunchLogStatus_value[l.Status]),
+			GasPrice:   l.GasPrice.String(),
+			GasUsed:    l.GasUsed,
+			ExecutedAt: l.ExecutedAt,
 		})
 	}
 
