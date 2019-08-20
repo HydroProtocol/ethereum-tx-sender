@@ -110,15 +110,17 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt 
 			pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)],
 			log.Hash,
 		).Update(map[string]interface{}{
-			"status":      pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
-			"gas_used":    gasUsed,
-			"executed_at": executedAt,
+			"status": pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
 		}).Error; err != nil {
 			logrus.Errorf("set retry status failed log: %+v err: %+v", log, err)
 			return err
 		}
 
-		if err = tx.Model(log).Update("status", status).Error; err != nil {
+		if err = tx.Model(log).Updates(map[string]interface{}{
+			"status":      status,
+			"gas_used":    gasUsed,
+			"executed_at": executedAt,
+		}).Error; err != nil {
 			logrus.Errorf("set final status failed log: %+v err: %+v", log, err)
 			return err
 		}
