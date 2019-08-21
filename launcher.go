@@ -325,7 +325,15 @@ func StartSendLoop(ctx context.Context) {
 
 			if err = db.Save(launchLog).Error; err != nil {
 				monitor.Count("launcher_update_failed")
-				logrus.Errorf("update launch log error id %d, err %v", launchLog.ID, err)
+
+				if strings.Contains(err.Error(), "duplicate key") && strings.Contains(err.Error(), "launch_logs_hash") {
+					var l LaunchLog
+					db.Model(&LaunchLog{}).First(&l, "hash = ?", launchLog.Hash.String)
+					logrus.Errorf("update launch log error id %d, err %v, same hash id: %d", launchLog.ID, err, l.ID)
+				} else {
+					logrus.Errorf("update launch log error id %d, err %v", launchLog.ID, err)
+				}
+
 				panic(err)
 			}
 
