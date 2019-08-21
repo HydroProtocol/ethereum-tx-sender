@@ -179,8 +179,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 		}
 
 		if err != nil {
-			launchLog.Status = pb.LaunchLogStatus_SIGN_FAILED.String()
-			return "", err
+			return "", fmt.Errorf("estimate gas error %+v", err)
 		}
 	} else {
 		gasLimit = launchLog.GasLimit
@@ -191,8 +190,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 	rawTxHex, err := pkmSign(&t)
 
 	if err != nil {
-		launchLog.Status = pb.LaunchLogStatus_SIGN_FAILED.String()
-		return "", err
+		return "", fmt.Errorf("sign error %+v", err)
 	}
 
 	hash := EncodeHex(Keccak256(DecodeHex(rawTxHex)))
@@ -310,17 +308,16 @@ func StartSendLoop(ctx context.Context) {
 
 				if strings.Contains(strings.ToLower(err.Error()), "nonce too low") {
 					deleteCachedNonce(launchLog.From)
-				}
-
-				if strings.Contains(strings.ToLower(err.Error()), "insufficient funds") {
+				} else if strings.Contains(strings.ToLower(err.Error()), "insufficient funds") {
 					launchLog.Status = pb.LaunchLogStatus_SEND_FAILED.String()
 					launchLog.ErrMsg = err.Error()
 					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SEND_FAILED)
-				}
-
-				// if it's signature error
-				// then the launch log will be saved for further investigate
-				if launchLog.Status == pb.LaunchLogStatus_SIGN_FAILED.String() {
+				} else if strings.Contains(err.Error(), "estimate gas error") {
+					launchLog.Status = pb.LaunchLogStatus_ESTIMATED_GAS_FAILED.String()
+					launchLog.ErrMsg = err.Error()
+					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_ESTIMATED_GAS_FAILED)
+				} else if strings.Contains(err.Error(), "sign error") {
+					launchLog.Status = pb.LaunchLogStatus_SIGN_FAILED.String()
 					launchLog.ErrMsg = err.Error()
 					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SIGN_FAILED)
 				}
