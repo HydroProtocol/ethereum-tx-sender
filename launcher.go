@@ -335,6 +335,7 @@ func StartSendLoop(ctx context.Context) {
 }
 
 func StartRetryLoop(ctx context.Context) {
+
 	logrus.Info("retry loop start!")
 
 	pendingStatusName := pb.LaunchLogStatus_PENDING.String()

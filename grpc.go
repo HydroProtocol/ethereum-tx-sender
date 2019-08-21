@@ -30,6 +30,10 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		if err != nil {
 			return nil, fmt.Errorf("convert value to decimal failed")
 		}
+
+		if !value.Equal(value.Round(0)) {
+			return nil, fmt.Errorf("value must be an integer, not a decimal")
+		}
 	}
 
 	var gasPrice decimal.Decimal
