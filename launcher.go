@@ -239,6 +239,8 @@ func tryLoadLaunchLogReceipt(launchLog *LaunchLog) bool {
 		return false
 	}
 
+	logrus.Infof("hash: %s, receipt in tryLoadLaunchLogReceipt %+v", launchLog.Hash.String, receipt)
+
 	if receipt == nil {
 		return false
 	}
