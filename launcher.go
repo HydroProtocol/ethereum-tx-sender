@@ -236,7 +236,7 @@ func tryLoadLaunchLogReceipt(launchLog *LaunchLog) bool {
 	receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
 
 	if err != nil || receipt == nil || receipt.TransactionHash == "" {
-		logrus.Infof("receipt at %s, err: %+v", launchLog.Hash.String)
+		logrus.Infof("receipt at %s, err: %+v", launchLog.Hash.String, err)
 		return false
 	}
 
