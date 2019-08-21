@@ -311,6 +311,7 @@ func StartSendLoop(ctx context.Context) {
 				} else if strings.Contains(strings.ToLower(err.Error()), "insufficient funds") {
 					launchLog.Status = pb.LaunchLogStatus_SEND_FAILED.String()
 					launchLog.ErrMsg = err.Error()
+					launchLog.Hash = sql.NullString{}
 					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SEND_FAILED)
 				} else if strings.Contains(err.Error(), "estimate gas error") {
 					launchLog.Status = pb.LaunchLogStatus_ESTIMATED_GAS_FAILED.String()
