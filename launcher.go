@@ -235,7 +235,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 func tryLoadLaunchLogReceipt(launchLog *LaunchLog) bool {
 	receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
 
-	if err != nil || receipt.TransactionHash == "" {
+	if err != nil || receipt == nil || receipt.TransactionHash == "" {
 		logrus.Infof("receipt at %s, err: %+v", launchLog.Hash.String)
 		return false
 	}
