@@ -365,6 +365,11 @@ func StartRetryLoop(ctx context.Context) {
 			start := time.Now()
 			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs)
 
+			if gasPrice.Equal(launchLog.GasPrice) {
+				logrus.Infof("Retry gas Price is same, skip ID: %d", launchLog.ID)
+				continue
+			}
+
 			isNewLaunchLogCreated := false
 
 			err = executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
