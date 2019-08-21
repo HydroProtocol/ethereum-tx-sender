@@ -308,11 +308,11 @@ func StartSendLoop(ctx context.Context) {
 				monitor.Count("launcher_shoot_failed")
 				logrus.Errorf("shoot launch log error id %d, err %v, err msg: %s", launchLog.ID, err, err.Error())
 
-				if strings.Contains(err.Error(), "nonce too low") {
+				if strings.Contains(strings.ToLower(err.Error()), "nonce too low") {
 					deleteCachedNonce(launchLog.From)
 				}
 
-				if strings.Contains(err.Error(), "insufficient funds") {
+				if strings.Contains(strings.ToLower(err.Error()), "insufficient funds") {
 					launchLog.Status = pb.LaunchLogStatus_SEND_FAILED.String()
 					launchLog.ErrMsg = err.Error()
 					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SEND_FAILED)
