@@ -99,7 +99,7 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt 
 			return err
 		}
 
-		if reloadedLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)] {
+		if reloadedLog.Status != pb.LaunchLogStatus_PENDING.String() {
 			return nil
 		}
 
@@ -107,10 +107,10 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt 
 			"item_type = ? and item_id = ? and status = ? and hash != ?",
 			log.ItemType,
 			log.ItemID,
-			pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)],
+			pb.LaunchLogStatus_PENDING.String(),
 			log.Hash,
 		).Update(map[string]interface{}{
-			"status": pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
+			"status": pb.LaunchLogStatus_RETRIED.String(),
 		}).Error; err != nil {
 			logrus.Errorf("set retry status failed log: %+v err: %+v", log, err)
 			return err
@@ -179,7 +179,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 		}
 
 		if err != nil {
-			launchLog.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)]
+			launchLog.Status = pb.LaunchLogStatus_SIGN_FAILED.String()
 			return "", err
 		}
 	} else {
@@ -191,7 +191,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 	rawTxHex, err := pkmSign(&t)
 
 	if err != nil {
-		launchLog.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)]
+		launchLog.Status = pb.LaunchLogStatus_SIGN_FAILED.String()
 		return "", err
 	}
 
@@ -225,7 +225,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 		increaseNextNonce(launchLog.From)
 	}
 
-	launchLog.Status = pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)]
+	launchLog.Status = pb.LaunchLogStatus_PENDING.String()
 	logrus.Infof("send launcher log, hash: %s, rawTxString: %s", hash, rawTxHex)
 
 	return hash, err
@@ -273,7 +273,7 @@ func StartSendLoop(ctx context.Context) {
 	logrus.Info("send loop start!")
 
 	for {
-		launchLogs := getAllLogsWithStatus(pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_CREATED)])
+		launchLogs := getAllLogsWithStatus(pb.LaunchLogStatus_CREATED.String())
 
 		if len(launchLogs) == 0 {
 			select {
@@ -305,16 +305,22 @@ func StartSendLoop(ctx context.Context) {
 
 			if err != nil {
 
+				monitor.Count("launcher_shoot_failed")
+				logrus.Errorf("shoot launch log error id %d, err %v, err msg: %s", launchLog.ID, err, err.Error())
+
 				if strings.Contains(err.Error(), "nonce too low") {
 					deleteCachedNonce(launchLog.From)
 				}
 
-				monitor.Count("launcher_shoot_failed")
-				logrus.Errorf("shoot launch log error id %d, err %v, err msg: %s", launchLog.ID, err, err.Error())
+				if strings.Contains(err.Error(), "insufficient funds") {
+					launchLog.Status = pb.LaunchLogStatus_SEND_FAILED.String()
+					launchLog.ErrMsg = err.Error()
+					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SEND_FAILED)
+				}
 
 				// if it's signature error
 				// then the launch log will be saved for further investigate
-				if launchLog.Status == pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SIGN_FAILED)] {
+				if launchLog.Status == pb.LaunchLogStatus_SIGN_FAILED.String() {
 					launchLog.ErrMsg = err.Error()
 					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SIGN_FAILED)
 				}
@@ -334,7 +340,7 @@ func StartSendLoop(ctx context.Context) {
 func StartRetryLoop(ctx context.Context) {
 	logrus.Info("retry loop start!")
 
-	pendingStatusName := pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)]
+	pendingStatusName := pb.LaunchLogStatus_PENDING.String()
 
 	for {
 		launchLogs := getAllLogsWithStatus(pendingStatusName)
@@ -512,7 +518,7 @@ func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
 	newLog := &LaunchLog{
 		ItemType: launchLog.ItemType,
 		ItemID:   launchLog.ItemID,
-		Status:   pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)],
+		Status:   pb.LaunchLogStatus_PENDING.String(),
 		From:     launchLog.From,
 		To:       launchLog.To,
 		Value:    launchLog.Value,

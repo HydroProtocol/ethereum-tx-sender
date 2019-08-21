@@ -38,6 +38,7 @@ enum LaunchLogStatus {
     FAILED = 4;  // ethereum node confirm failed
 
     SIGN_FAILED = 5; // sign failed
+    SEND_FAILED = 6;
 }
 
 // The response message containing the greetings

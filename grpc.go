@@ -73,7 +73,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		Data:     msg.Data,
 		ItemID:   msg.ItemId,
 		ItemType: msg.ItemType,
-		Status:   pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_CREATED)],
+		Status:   pb.LaunchLogStatus_CREATED.String(),
 	}
 
 	if err = db.Create(log).Error; err != nil {

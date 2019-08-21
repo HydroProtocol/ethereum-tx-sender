@@ -45,7 +45,7 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		status := pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_SUCCESS)]
+		status := pb.LaunchLogStatus_SUCCESS.String()
 		_ = executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 			time.Sleep(100 * time.Millisecond)
 			logrus.Info("loop 1 in")
@@ -60,7 +60,7 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 
 			time.Sleep(300 * time.Millisecond)
 
-			if reloadedLog.Status != pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)] {
+			if reloadedLog.Status != pb.LaunchLogStatus_PENDING.String() {
 				return nil
 			}
 
@@ -68,10 +68,10 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 				"item_type = ? and item_id = ? and status = ? and hash != ?",
 				originalLog.ItemType,
 				originalLog.ItemID,
-				pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)],
+				pb.LaunchLogStatus_PENDING.String(),
 				originalLog.Hash,
 			).Update(map[string]interface{}{
-				"status": pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_RETRIED)],
+				"status": pb.LaunchLogStatus_RETRIED.String(),
 			}).Error; err != nil {
 				logrus.Errorf("set retry status failed log: %+v err: %+v", originalLog, err)
 				tx.Rollback()
@@ -93,7 +93,7 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		status := pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)]
+		status := pb.LaunchLogStatus_PENDING.String()
 		_ = executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
 			time.Sleep(100 * time.Millisecond)
 			logrus.Info("loop 2 in")

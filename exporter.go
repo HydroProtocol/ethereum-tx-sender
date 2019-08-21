@@ -8,7 +8,7 @@ import (
 )
 
 func startDatabaseExporter(ctx context.Context) {
-	pendingStatusName := pb.LaunchLogStatus_name[int32(pb.LaunchLogStatus_PENDING)]
+	pendingStatusName := pb.LaunchLogStatus_PENDING.String()
 
 	for {
 		time.Sleep(10 * time.Second)
