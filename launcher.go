@@ -236,7 +236,6 @@ func tryLoadLaunchLogReceipt(launchLog *LaunchLog) bool {
 	receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
 
 	if err != nil || receipt == nil || receipt.TransactionHash == "" {
-		logrus.Infof("receipt at %s, err: %+v", launchLog.Hash.String, err)
 		return false
 	}
 
@@ -305,6 +304,11 @@ func StartSendLoop(ctx context.Context) {
 			_, err := sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
 
 			if err != nil {
+
+				if strings.Contains(err.Error(), "nonce too low") {
+					deleteCachedNonce(launchLog.From)
+				}
+
 				monitor.Count("launcher_shoot_failed")
 				logrus.Errorf("shoot launch log error id %d, err %v, err msg: %s", launchLog.ID, err, err.Error())
 
