@@ -43,7 +43,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 	var gasPrice decimal.Decimal
 
 	if msg.GasPrice == "" {
-		gasPrice = getCurrentGasPrice()
+		gasPrice = getCurrentGasPrice(msg.IsUrgent)
 	} else {
 		gasPrice, err = decimal.NewFromString(msg.GasPrice)
 		if err != nil {
@@ -72,6 +72,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		Hash: sql.NullString{
 			Valid: false,
 		},
+		IsUrgent: msg.IsUrgent,
 		From:     strings.ToLower(msg.From),
 		To:       strings.ToLower(msg.To),
 		Value:    value,

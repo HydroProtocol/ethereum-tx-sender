@@ -22,6 +22,7 @@ message CreateMessage {
     uint32 gas_limit = 6;
     string item_type = 7;
     string item_id = 8;
+    bool isUrgent = 9;
 }
 
 enum RequestStatus {

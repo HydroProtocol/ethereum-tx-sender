@@ -12,11 +12,16 @@ import (
 	"net/http"
 )
 
-func getCurrentGasPrice() decimal.Decimal {
+func getCurrentGasPrice(isUrgent bool) decimal.Decimal {
 	prices, err := client.Get()
 
 	if err != nil {
 		logrus.Error("Can't get gas price, will use default")
+	}
+
+	if isUrgent {
+		// 1.1 times high
+		return prices.High.Mul(decimal.NewFromFloat(1.1))
 	}
 
 	return prices.Proposed

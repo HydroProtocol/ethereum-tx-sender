@@ -293,7 +293,8 @@ func StartSendLoop(ctx context.Context) {
 
 		logrus.Infof("%d created log to be send", len(launchLogs))
 
-		gasPrice := getCurrentGasPrice()
+		normalGasPrice := getCurrentGasPrice(false)
+		urgentGasPrice := getCurrentGasPrice(true)
 
 		for i := 0; i < len(launchLogs); i++ {
 			start := time.Now()
@@ -306,7 +307,12 @@ func StartSendLoop(ctx context.Context) {
 				}
 			}
 
-			_, err := sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
+			var err error
+			if launchLog.IsUrgent {
+				_, err = sendEthLaunchLogWithGasPrice(launchLog, urgentGasPrice)
+			} else {
+				_, err = sendEthLaunchLogWithGasPrice(launchLog, normalGasPrice)
+			}
 
 			if err != nil {
 
@@ -449,7 +455,7 @@ func StartRetryLoop(ctx context.Context) {
 }
 
 func determineGasPriceForRetryLaunchLog(launchLog *LaunchLog, longestPendingSecs int) decimal.Decimal {
-	suggestGasPrice := getCurrentGasPrice()
+	suggestGasPrice := getCurrentGasPrice(launchLog.IsUrgent)
 
 	minRetryGasPrice := launchLog.GasPrice.Mul(decimal.New(115, -2))
 	gasPrice := decimal.Max(suggestGasPrice, minRetryGasPrice)
