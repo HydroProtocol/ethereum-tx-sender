@@ -90,10 +90,11 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 
 	key := getSubscribeHubKey(msg.ItemType, msg.ItemId)
 
-	resCh := make(chan *pb.CreateReply)
-	errCh := make(chan error)
+	resCh := make(chan *pb.CreateReply, 1)
+	errCh := make(chan error, 1)
 
 	cb := func(l *LaunchLog, err error) {
+		logrus.Infof("Create callback for log %d, error: %+v", l.ID, err)
 		if err != nil {
 			errCh <- err
 			return
@@ -174,6 +175,8 @@ func getSubscribeHubKey(itemType, itemId string) string {
 }
 
 func sendLogStatusToSubscriber(log *LaunchLog, err error) {
+	logrus.Infof("sendLogStatusToSubscriber for log %d", log.ID)
+
 	key := getSubscribeHubKey(log.ItemType, log.ItemID)
 
 	data, ok := subscribeHub.data[key]
@@ -195,7 +198,6 @@ func sendLogStatusToSubscriber(log *LaunchLog, err error) {
 		case *CreateCallbackFunc:
 			(*v)(log, err)
 		}
-
 	}
 }
 
@@ -228,7 +230,7 @@ type SubscribeHub struct {
 	data map[string]map[interface{}]bool
 }
 
-func (sb *SubscribeHub) Register(key string, server interface{}) {
+func (sb *SubscribeHub) Register(key string, handler interface{}) {
 	sb.m.Lock()
 	defer sb.m.Unlock()
 
@@ -236,10 +238,10 @@ func (sb *SubscribeHub) Register(key string, server interface{}) {
 		sb.data[key] = make(map[interface{}]bool)
 	}
 
-	sb.data[key][server] = true
+	sb.data[key][handler] = true
 }
 
-func (sb *SubscribeHub) Remove(key string, server interface{}) {
+func (sb *SubscribeHub) Remove(key string, handler interface{}) {
 	sb.m.Lock()
 	defer sb.m.Unlock()
 
@@ -247,7 +249,7 @@ func (sb *SubscribeHub) Remove(key string, server interface{}) {
 		return
 	}
 
-	delete(sb.data[key], server)
+	delete(sb.data[key], handler)
 
 	if len(sb.data[key]) == 0 {
 		delete(sb.data, key)
