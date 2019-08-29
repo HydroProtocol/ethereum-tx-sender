@@ -113,8 +113,8 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		}
 	}
 
-	subscribeHub.Register(key, cb)
-	defer subscribeHub.Remove(key, cb)
+	subscribeHub.Register(key, &cb)
+	defer subscribeHub.Remove(key, &cb)
 
 	// notify the send loop to work
 	newRequestChannel <- 1
@@ -192,8 +192,8 @@ func sendLogStatusToSubscriber(log *LaunchLog, err error) {
 				ItemType: log.ItemType,
 				ErrMsg:   log.ErrMsg,
 			})
-		case CreateCallbackFunc:
-			v(log, err)
+		case *CreateCallbackFunc:
+			(*v)(log, err)
 		}
 
 	}
