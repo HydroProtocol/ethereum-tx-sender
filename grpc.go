@@ -182,6 +182,7 @@ func sendLogStatusToSubscriber(log *LaunchLog, err error) {
 	data, ok := subscribeHub.data[key]
 
 	if !ok || data == nil {
+		logrus.Infof("no subscriber handlers found for log %d", log.ID)
 		return
 	}
 

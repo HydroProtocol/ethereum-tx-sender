@@ -287,6 +287,7 @@ func StartSendLoop(ctx context.Context) {
 			case <-newRequestChannel:
 				// new request has come, start working!
 				logrus.Info("newRequestChannel got message!")
+				continue
 			}
 		}
 
