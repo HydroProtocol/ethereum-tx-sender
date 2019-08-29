@@ -129,10 +129,13 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt 
 	})
 
 	if err != nil {
+		sendLogStatusToSubscriber(log, err)
 		return err
 	}
 
-	sendLogStatusToSubscriber(log, statusCode)
+	// reload
+	db.First(log, log.ID)
+	sendLogStatusToSubscriber(log, nil)
 
 	return nil
 }
@@ -278,9 +281,12 @@ func StartSendLoop(ctx context.Context) {
 			case <-ctx.Done():
 				logrus.Info("launcher send loop Exit")
 				return
-			case <-time.After(5 * time.Second):
-				logrus.Infof("no logs need to be sent. sleep 5s")
+			case <-time.After(10 * time.Second):
+				logrus.Infof("no logs need to be sent. sleep 10s")
 				continue
+			case <-newRequestChannel:
+				// new request has come, start working!
+				logrus.Info("newRequestChannel got message!")
 			}
 		}
 
@@ -308,19 +314,17 @@ func StartSendLoop(ctx context.Context) {
 
 				if strings.Contains(strings.ToLower(err.Error()), "nonce too low") {
 					deleteCachedNonce(launchLog.From)
+					continue
 				} else if strings.Contains(strings.ToLower(err.Error()), "insufficient funds") {
 					launchLog.Status = pb.LaunchLogStatus_SEND_FAILED.String()
 					launchLog.ErrMsg = err.Error()
 					launchLog.Hash = sql.NullString{}
-					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SEND_FAILED)
 				} else if strings.Contains(err.Error(), "estimate gas error") {
 					launchLog.Status = pb.LaunchLogStatus_ESTIMATED_GAS_FAILED.String()
 					launchLog.ErrMsg = err.Error()
-					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_ESTIMATED_GAS_FAILED)
 				} else if strings.Contains(err.Error(), "sign error") {
 					launchLog.Status = pb.LaunchLogStatus_SIGN_FAILED.String()
 					launchLog.ErrMsg = err.Error()
-					sendLogStatusToSubscriber(launchLog, pb.LaunchLogStatus_SIGN_FAILED)
 				}
 			}
 
@@ -335,9 +339,12 @@ func StartSendLoop(ctx context.Context) {
 					logrus.Errorf("update launch log error id %d, err %v", launchLog.ID, err)
 				}
 
+				sendLogStatusToSubscriber(launchLog, err)
 				panic(err)
 			}
 
+			db.First(launchLog, launchLog.ID)
+			sendLogStatusToSubscriber(launchLog, nil)
 			monitor.Time("launcher_send_log", float64(time.Since(start))/1000000)
 		}
 	}

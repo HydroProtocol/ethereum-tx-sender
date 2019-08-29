@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/hex"
 	"github.com/davecgh/go-spew/spew"
-	"golang.org/x/crypto/sha3"
 	"os"
 	"testing"
 )

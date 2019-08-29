@@ -10,9 +10,13 @@ import (
 	"google.golang.org/grpc"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 )
+
+// notify the send loop to start
+var newRequestChannel = make(chan int, 100)
 
 //go:generate protoc -I.  --go_out=plugins=grpc:. ./messages/messages.proto
 
@@ -84,11 +88,46 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		return nil, err
 	}
 
-	return &pb.CreateReply{
-		Status: pb.RequestStatus_REQUEST_SUCCESSFUL,
-		ErrMsg: "",
-	}, nil
+	key := getSubscribeHubKey(msg.ItemType, msg.ItemId)
+
+	resCh := make(chan *pb.CreateReply)
+	errCh := make(chan error)
+
+	cb := func(l *LaunchLog, err error) {
+		if err != nil {
+			errCh <- err
+			return
+		}
+
+		resCh <- &pb.CreateReply{
+			Status: pb.RequestStatus_REQUEST_SUCCESSFUL,
+			ErrMsg: "",
+			Data: &pb.Log{
+				Hash:     l.Hash.String,
+				ItemId:   l.ItemID,
+				ItemType: l.ItemType,
+				Status:   pb.LaunchLogStatus(pb.LaunchLogStatus_value[l.Status]),
+				GasPrice: l.GasPrice.String(),
+				GasLimit: strconv.FormatUint(l.GasLimit, 10),
+			},
+		}
+	}
+
+	subscribeHub.Register(key, cb)
+	defer subscribeHub.Remove(key, cb)
+
+	// notify the send loop to work
+	newRequestChannel <- 1
+
+	select {
+	case err := <-errCh:
+		return nil, err
+	case res := <-resCh:
+		return res, nil
+	}
 }
+
+type CreateCallbackFunc func(l *LaunchLog, err error)
 
 func (*server) Hello(ctx context.Context, msg *pb.HelloMessage) (*pb.HelloReply, error) {
 	return &pb.HelloReply{}, nil
@@ -134,7 +173,7 @@ func getSubscribeHubKey(itemType, itemId string) string {
 	return fmt.Sprintf("Type:%s-ID:%s", itemType, itemId)
 }
 
-func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
+func sendLogStatusToSubscriber(log *LaunchLog, err error) {
 	key := getSubscribeHubKey(log.ItemType, log.ItemID)
 
 	data, ok := subscribeHub.data[key]
@@ -144,13 +183,19 @@ func sendLogStatusToSubscriber(log *LaunchLog, status pb.LaunchLogStatus) {
 	}
 
 	for s, _ := range data {
-		_ = s.Send(&pb.SubscribeReply{
-			Status:   status,
-			Hash:     log.Hash.String,
-			ItemId:   log.ItemID,
-			ItemType: log.ItemType,
-			ErrMsg:   log.ErrMsg,
-		})
+		switch v := s.(type) {
+		case pb.Launcher_SubscribeServer:
+			_ = v.Send(&pb.SubscribeReply{
+				Status:   pb.LaunchLogStatus(pb.LaunchLogStatus_value[log.Status]),
+				Hash:     log.Hash.String,
+				ItemId:   log.ItemID,
+				ItemType: log.ItemType,
+				ErrMsg:   log.ErrMsg,
+			})
+		case CreateCallbackFunc:
+			v(log, err)
+		}
+
 	}
 }
 
@@ -180,21 +225,21 @@ func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
 
 type SubscribeHub struct {
 	m    *sync.Mutex
-	data map[string]map[pb.Launcher_SubscribeServer]bool
+	data map[string]map[interface{}]bool
 }
 
-func (sb *SubscribeHub) Register(key string, server pb.Launcher_SubscribeServer) {
+func (sb *SubscribeHub) Register(key string, server interface{}) {
 	sb.m.Lock()
 	defer sb.m.Unlock()
 
 	if _, ok := sb.data[key]; !ok {
-		sb.data[key] = make(map[pb.Launcher_SubscribeServer]bool)
+		sb.data[key] = make(map[interface{}]bool)
 	}
 
 	sb.data[key][server] = true
 }
 
-func (sb *SubscribeHub) Remove(key string, server pb.Launcher_SubscribeServer) {
+func (sb *SubscribeHub) Remove(key string, server interface{}) {
 	sb.m.Lock()
 	defer sb.m.Unlock()
 
@@ -214,7 +259,7 @@ var subscribeHub *SubscribeHub
 func startGrpcServer(ctx context.Context) {
 	subscribeHub = &SubscribeHub{
 		m:    &sync.Mutex{},
-		data: make(map[string]map[pb.Launcher_SubscribeServer]bool),
+		data: make(map[string]map[interface{}]bool),
 	}
 
 	lis, err := net.Listen("tcp", ":3000")

@@ -45,7 +45,8 @@ enum LaunchLogStatus {
 // The response message containing the greetings
 message CreateReply {
     RequestStatus status = 1;
-   string err_msg = 2;
+    string err_msg = 2;
+    Log data = 3;
 }
 
 message HelloMessage {}
