@@ -99,7 +99,8 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt 
 			return err
 		}
 
-		if reloadedLog.Status != pb.LaunchLogStatus_PENDING.String() {
+		if reloadedLog.Status != pb.LaunchLogStatus_PENDING.String() &&
+			reloadedLog.Status != pb.LaunchLogStatus_CREATED.String() {
 			return nil
 		}
 
