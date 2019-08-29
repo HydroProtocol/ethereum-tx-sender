@@ -200,6 +200,8 @@ func sendLogStatusToSubscriber(log *LaunchLog, err error) {
 		case *CreateCallbackFunc:
 			logrus.Infof("sendLogStatusToSubscriber for log %d, handler: *CreateCallbackFunc", log.ID)
 			(*v)(log, err)
+		default:
+			logrus.Errorf("sendLogStatusToSubscriber for log %d, handler: unknown, %+v, %+v", log.ID, s, v)
 		}
 	}
 }
