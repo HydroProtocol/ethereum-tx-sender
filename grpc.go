@@ -93,7 +93,11 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 	resCh := make(chan *pb.CreateReply, 1)
 	errCh := make(chan error, 1)
 
-	cb := func(l *LaunchLog, err error) {
+	// it's important to use var here
+	// otherwise, golang cant's cast the pointer back
+	var cb CreateCallbackFunc
+
+	cb = func(l *LaunchLog, err error) {
 		logrus.Infof("Create callback for log %d, error: %+v", l.ID, err)
 		if err != nil {
 			errCh <- err
