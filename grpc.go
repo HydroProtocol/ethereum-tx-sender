@@ -189,6 +189,7 @@ func sendLogStatusToSubscriber(log *LaunchLog, err error) {
 	for s, _ := range data {
 		switch v := s.(type) {
 		case pb.Launcher_SubscribeServer:
+			logrus.Infof("sendLogStatusToSubscriber for log %d, handler: pb.Launcher_SubscribeServer", log.ID)
 			_ = v.Send(&pb.SubscribeReply{
 				Status:   pb.LaunchLogStatus(pb.LaunchLogStatus_value[log.Status]),
 				Hash:     log.Hash.String,
@@ -197,6 +198,7 @@ func sendLogStatusToSubscriber(log *LaunchLog, err error) {
 				ErrMsg:   log.ErrMsg,
 			})
 		case *CreateCallbackFunc:
+			logrus.Infof("sendLogStatusToSubscriber for log %d, handler: *CreateCallbackFunc", log.ID)
 			(*v)(log, err)
 		}
 	}
