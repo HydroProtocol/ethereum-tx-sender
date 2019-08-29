@@ -70,6 +70,7 @@ message Log {
     string gas_limit = 6;
     uint64 gas_used = 7;
     uint64 executed_at = 8;
+    string error = 9;
 }
 
 message GetMessage {

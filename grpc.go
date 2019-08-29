@@ -114,6 +114,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 				Status:   pb.LaunchLogStatus(pb.LaunchLogStatus_value[l.Status]),
 				GasPrice: l.GasPrice.String(),
 				GasLimit: strconv.FormatUint(l.GasLimit, 10),
+				Error:    l.ErrMsg,
 			},
 		}
 	}
@@ -160,6 +161,7 @@ func (*server) Get(ctx context.Context, msg *pb.GetMessage) (*pb.GetReply, error
 			GasPrice:   l.GasPrice.String(),
 			GasUsed:    l.GasUsed,
 			ExecutedAt: l.ExecutedAt,
+			Error:      l.ErrMsg,
 		})
 	}
 
