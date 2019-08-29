@@ -33,7 +33,7 @@ type LaunchLog struct {
 	ItemID     string          `gorm:"not null;index:idx_launch_logs_item"`
 	Hash       sql.NullString  `gorm:"unique_index"`
 	ErrMsg     string          `gorm:"type:text"`
-	IsUrgent   bool            `gorm:"not null;"`
+	IsUrgent   bool            `gorm:"not null;default:false"`
 	Nonce      sql.NullInt64
 }
 
