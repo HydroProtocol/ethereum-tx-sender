@@ -2,11 +2,74 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/HydroProtocol/nights-watch"
 	"github.com/HydroProtocol/nights-watch/plugin"
 	"github.com/HydroProtocol/nights-watch/structs"
+	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
+	"strconv"
+	"sync"
 )
+
+var redisClient *redis.Client
+var lastSavedBlockNumber int
+var updateBlockNumberMutex *sync.Mutex
+
+func connectRedis() {
+	opt, err := redis.ParseURL(config.RedisUrl)
+
+	if err != nil {
+		panic(err)
+	}
+
+	opt.MinIdleConns = 2
+	opt.PoolSize = 2
+
+	redisClient = redis.NewClient(opt)
+	updateBlockNumberMutex = &sync.Mutex{}
+}
+
+func saveBlockNumber(blockNum int) error {
+	updateBlockNumberMutex.Lock()
+	defer updateBlockNumberMutex.Unlock()
+
+	if blockNum <= lastSavedBlockNumber {
+		return nil
+	}
+
+	blockNumString := strconv.Itoa(blockNum)
+	err := redisClient.Set(config.RedisBlockNumberCacheKey, blockNumString, 0).Err()
+
+	if err != nil {
+		logrus.Warnf("fail when write %s = %s", config.RedisBlockNumberCacheKey, blockNumString)
+	} else {
+		lastSavedBlockNumber = blockNum
+		logrus.Infof("save block number %s to redis", blockNumString)
+	}
+
+	return err
+}
+
+func getHighestSyncedBlock() int {
+	rst, err := redisClient.Get(config.RedisBlockNumberCacheKey).Result()
+
+	if err == redis.Nil {
+		return -1
+	} else if err != nil {
+		panic(fmt.Sprintf("redis err when GetHighestSyncedBlock: %s", err))
+	} else {
+		blockNumber, err := strconv.ParseUint(rst, 10, 64)
+		if err != nil {
+			panic(fmt.Sprintf("invalid value of redis key(%s): %s", config.RedisBlockNumberCacheKey, rst))
+		}
+
+		logrus.Debugf("start calculate from %s: %d", config.RedisBlockNumberCacheKey, blockNumber)
+
+		lastSavedBlockNumber = int(blockNumber)
+		return int(blockNumber)
+	}
+}
 
 func startNightWatch(ctx context.Context) {
 	w := nights_watch.NewHttpBasedEthWatcher(ctx, config.EthereumNodeUrl)
@@ -54,7 +117,10 @@ func startNightWatch(ctx context.Context) {
 		}
 
 		logrus.Infof("tx %s err: %+v result: %s", txAndReceipt.Receipt.GetTxHash(), err, result)
+
+		_ = saveBlockNumber(int(txAndReceipt.Receipt.GetBlockNumber()))
+
 	}))
 
-	_ = w.RunTillExit()
+	_ = w.RunTillExitFromBlock(uint64(getHighestSyncedBlock()))
 }

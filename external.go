@@ -21,7 +21,7 @@ func getCurrentGasPrice(isUrgent bool) decimal.Decimal {
 
 	if isUrgent {
 		// 1.1 times high
-		return prices.High.Mul(decimal.NewFromFloat(1.1))
+		return prices.Proposed.Mul(decimal.NewFromFloat(1.1))
 	}
 
 	return prices.Proposed

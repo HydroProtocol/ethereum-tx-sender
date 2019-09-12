@@ -19,6 +19,8 @@ type Config struct {
 	RetryPendingSecondsThreshold int             `json:"retry_pending_seconds_threshold"`
 	EthereumNodeUrl              string          `json:"ethereum_node_url"`
 	PkmUrl                       string          `json:"pkm_url"`
+	RedisUrl                     string          `json:"redis_url"`
+	RedisBlockNumberCacheKey     string          `json:"redis_block_number_cache_key"`
 }
 
 var config *Config
@@ -48,6 +50,8 @@ func run() int {
 			DatabaseURL:                  "postgres://localhost:5432/launcher",
 			MaxGasPriceForRetry:          decimal.New(5, 9), // 5 Gwei
 			RetryPendingSecondsThreshold: 10,                // 10 s
+			RedisUrl:                     "redis://localhost:6379/0",
+			RedisBlockNumberCacheKey:     "EthereumLauncherCacheKey",
 		}
 	}
 
@@ -56,6 +60,7 @@ func run() int {
 	log.AutoSetLogLevel()
 
 	connectDB()
+	connectRedis()
 	defer db.Close()
 
 	go waitExitSignal(stop)
