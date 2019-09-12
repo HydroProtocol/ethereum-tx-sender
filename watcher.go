@@ -79,6 +79,8 @@ func startNightWatch(ctx context.Context) {
 			return
 		}
 
+		_ = saveBlockNumber(int(txAndReceipt.Receipt.GetBlockNumber()))
+
 		var log LaunchLog
 		db.Where("hash = ?", txAndReceipt.Receipt.GetTxHash()).First(&log)
 
@@ -117,9 +119,6 @@ func startNightWatch(ctx context.Context) {
 		}
 
 		logrus.Infof("tx %s err: %+v result: %s", txAndReceipt.Receipt.GetTxHash(), err, result)
-
-		_ = saveBlockNumber(int(txAndReceipt.Receipt.GetBlockNumber()))
-
 	}))
 
 	_ = w.RunTillExitFromBlock(uint64(getHighestSyncedBlock()))
