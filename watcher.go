@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"sync"
+	"time"
 )
 
 var redisClient *redis.Client
@@ -121,5 +122,12 @@ func startNightWatch(ctx context.Context) {
 		logrus.Infof("tx %s err: %+v result: %s", txAndReceipt.Receipt.GetTxHash(), err, result)
 	}))
 
-	_ = w.RunTillExitFromBlock(uint64(getHighestSyncedBlock()))
+	for {
+		err := w.RunTillExitFromBlock(uint64(getHighestSyncedBlock()))
+
+		if err != nil {
+			logrus.Errorf("watcher error: %+v", err)
+			time.Sleep(1 * time.Second)
+		}
+	}
 }
