@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"git.ddex.io/lib/monitor"
 	"github.com/HydroProtocol/nights-watch"
 	"github.com/HydroProtocol/nights-watch/plugin"
 	"github.com/HydroProtocol/nights-watch/structs"
@@ -81,6 +82,7 @@ func startNightWatch(ctx context.Context) {
 		}
 
 		_ = saveBlockNumber(int(txAndReceipt.Receipt.GetBlockNumber()))
+		monitor.Value("block_number", float64(txAndReceipt.Receipt.GetBlockNumber()))
 
 		var log LaunchLog
 		db.Where("hash = ?", txAndReceipt.Receipt.GetTxHash()).First(&log)
