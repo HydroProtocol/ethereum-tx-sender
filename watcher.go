@@ -56,7 +56,7 @@ func getHighestSyncedBlock() int {
 	rst, err := redisClient.Get(config.RedisBlockNumberCacheKey).Result()
 
 	if err == redis.Nil {
-		return -1
+		return 0
 	} else if err != nil {
 		panic(fmt.Sprintf("redis err when GetHighestSyncedBlock: %s", err))
 	} else {
