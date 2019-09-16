@@ -94,7 +94,7 @@ func startNightWatch(ctx context.Context) {
 		var result string
 		var err error
 		gasUsed := 0
-		executedAt := 0
+		executedAt := int(txAndReceipt.TimeStamp)
 
 		// to get gasUsed, TODO: return gasUsed from receipt
 		receipt, err := ethrpcClient.EthGetTransactionReceipt(txAndReceipt.Receipt.GetTxHash())
@@ -103,14 +103,6 @@ func startNightWatch(ctx context.Context) {
 			logrus.Errorf("get receipt gasUsed failed, err: %+v, receipt: %+v", err, receipt)
 		} else {
 			gasUsed = receipt.GasUsed
-		}
-
-		block, err := ethrpcClient.EthGetBlockByNumber(receipt.BlockNumber, false)
-
-		if err != nil {
-			logrus.Errorf("get receipt block timestamp failed, err: %+v", err)
-		} else {
-			executedAt = block.Timestamp
 		}
 
 		if txAndReceipt.Receipt.GetResult() {
