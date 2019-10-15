@@ -212,6 +212,8 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 
 	if hashOnChain != hash {
 		logrus.Fatalf("hashOnChain != hash, %s, %s", hashOnChain, hash)
+	} else {
+		logrus.Infof("send tx hash: %s, isNewLog: %t", hash, isNewLog)
 	}
 
 	launchLog.GasPrice = gasPrice
