@@ -80,6 +80,7 @@ func connectDB() {
 	}
 
 	db = _db
+	db.LogMode(true)
 
 	db.AutoMigrate(&LaunchLog{})
 }
