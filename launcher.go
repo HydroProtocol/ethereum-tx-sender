@@ -384,16 +384,25 @@ func StartRetryLoop(ctx context.Context) {
 			}
 		}
 
+		idxOfLastUrgentNeedResendLog := -1
+		for i, launchLog := range needResendLogs {
+			if launchLog.IsUrgent {
+				idxOfLastUrgentNeedResendLog = i
+			}
+		}
+
 		logrus.Infof("resending long pending logs, num: %d", len(needResendLogs))
 		var err error
-		for _, launchLog := range needResendLogs {
+		for i, launchLog := range needResendLogs {
 			// try to load launch log before retry
 			if ok := tryLoadLaunchLogReceipt(launchLog); ok {
 				continue
 			}
 
+			isBlockingUrgentLog := i <= idxOfLastUrgentNeedResendLog
+
 			start := time.Now()
-			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs)
+			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs, isBlockingUrgentLog)
 
 			if gasPrice.Equal(launchLog.GasPrice) {
 				logrus.Infof("Retry gas Price is same, skip ID: %d", launchLog.ID)
@@ -457,8 +466,14 @@ func StartRetryLoop(ctx context.Context) {
 
 }
 
-func determineGasPriceForRetryLaunchLog(launchLog *LaunchLog, longestPendingSecs int) decimal.Decimal {
-	suggestGasPrice := getCurrentGasPrice(launchLog.IsUrgent)
+func determineGasPriceForRetryLaunchLog(
+	launchLog *LaunchLog,
+	longestPendingSecs int,
+	isBlockingUrgentLog bool,
+) decimal.Decimal {
+	treatAsUrgent := isBlockingUrgentLog || launchLog.IsUrgent
+
+	suggestGasPrice := getCurrentGasPrice(treatAsUrgent)
 
 	minRetryGasPrice := launchLog.GasPrice.Mul(decimal.New(115, -2))
 	gasPrice := decimal.Max(suggestGasPrice, minRetryGasPrice)
