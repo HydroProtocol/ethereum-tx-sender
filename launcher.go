@@ -400,6 +400,10 @@ func StartRetryLoop(ctx context.Context) {
 			}
 
 			isBlockingUrgentLog := i <= idxOfLastUrgentNeedResendLog
+			if isBlockingUrgentLog {
+				logrus.Infof("is blocking urgent, %d(%s) <= %d(%s)",
+					i, needResendLogs[i].ID, idxOfLastUrgentNeedResendLog, needResendLogs[idxOfLastUrgentNeedResendLog].ID)
+			}
 
 			start := time.Now()
 			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs, isBlockingUrgentLog)
@@ -570,6 +574,8 @@ func pickLaunchLogsPendingTooLong(logs []*LaunchLog) (rst []*LaunchLog) {
 	}
 
 	if oldBoundaryLineIdx >= 0 {
+		logrus.Infof("pick pending too long, %d/%d", oldBoundaryLineIdx+1, len(logs))
+
 		return logs[0 : oldBoundaryLineIdx+1]
 	}
 
