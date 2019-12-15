@@ -14,13 +14,14 @@ import (
 )
 
 type Config struct {
-	DatabaseURL                  string          `json:"database_url"`
-	MaxGasPriceForRetry          decimal.Decimal `json:"max_gas_price_for_retry"`
-	RetryPendingSecondsThreshold int             `json:"retry_pending_seconds_threshold"`
-	EthereumNodeUrl              string          `json:"ethereum_node_url"`
-	PkmUrl                       string          `json:"pkm_url"`
-	RedisUrl                     string          `json:"redis_url"`
-	RedisBlockNumberCacheKey     string          `json:"redis_block_number_cache_key"`
+	DatabaseURL                           string          `json:"database_url"`
+	MaxGasPriceForRetry                   decimal.Decimal `json:"max_gas_price_for_retry"`
+	RetryPendingSecondsThreshold          int             `json:"retry_pending_seconds_threshold"`
+	RetryPendingSecondsThresholdForUrgent int             `json:"retry_pending_seconds_threshold_for_urgent"`
+	EthereumNodeUrl                       string          `json:"ethereum_node_url"`
+	PkmUrl                                string          `json:"pkm_url"`
+	RedisUrl                              string          `json:"redis_url"`
+	RedisBlockNumberCacheKey              string          `json:"redis_block_number_cache_key"`
 }
 
 var config *Config

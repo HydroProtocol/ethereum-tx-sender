@@ -538,19 +538,42 @@ func pickLatestLogForEachNonce(logs []*LaunchLog) (rst []*LaunchLog) {
 }
 
 func pickLaunchLogsPendingTooLong(logs []*LaunchLog) (rst []*LaunchLog) {
+	// make sure logs are sort by nonce asc
+	sort.Slice(logs, func(i, j int) bool {
+		return logs[i].Nonce.Int64 < logs[j].Nonce.Int64
+	})
+
 	timeoutForLaunchlogPendingInSecs := config.RetryPendingSecondsThreshold
+	timeoutForUrgentLaunchlogPendingInSecs := config.RetryPendingSecondsThresholdForUrgent
 
-	for _, launchLog := range logs {
-		gapBackward := time.Duration(-1*timeoutForLaunchlogPendingInSecs) * time.Second
+	// in case urgent not set
+	if timeoutForUrgentLaunchlogPendingInSecs <= 0 {
+		timeoutForUrgentLaunchlogPendingInSecs = timeoutForLaunchlogPendingInSecs
+	}
+
+	oldBoundaryLineIdx := -1
+	for i, launchLog := range logs {
+
+		var gapBackward time.Duration
+		if launchLog.IsUrgent {
+			gapBackward = time.Duration(-1*timeoutForUrgentLaunchlogPendingInSecs) * time.Second
+		} else {
+			gapBackward = time.Duration(-1*timeoutForLaunchlogPendingInSecs) * time.Second
+		}
+
 		oldBoundaryLine := time.Now().Add(gapBackward).UTC()
-
 		tooOld := launchLog.CreatedAt.Before(oldBoundaryLine)
+
 		if tooOld {
-			rst = append(rst, launchLog)
+			oldBoundaryLineIdx = i
 		}
 	}
 
-	return
+	if oldBoundaryLineIdx >= 0 {
+		return logs[0 : oldBoundaryLineIdx+1]
+	}
+
+	return nil
 }
 
 func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
