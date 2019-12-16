@@ -311,10 +311,16 @@ func StartSendLoop(ctx context.Context) {
 			}
 
 			var err error
-			if launchLog.IsUrgent {
-				_, err = sendEthLaunchLogWithGasPrice(launchLog, urgentGasPrice)
+
+			//todo hack, to be deleted
+			if launchLog.GasPrice.IsPositive() {
+				_, err = sendEthLaunchLogWithGasPrice(launchLog, launchLog.GasPrice)
 			} else {
-				_, err = sendEthLaunchLogWithGasPrice(launchLog, normalGasPrice)
+				if launchLog.IsUrgent {
+					_, err = sendEthLaunchLogWithGasPrice(launchLog, urgentGasPrice)
+				} else {
+					_, err = sendEthLaunchLogWithGasPrice(launchLog, normalGasPrice)
+				}
 			}
 
 			if err != nil {
