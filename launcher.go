@@ -401,7 +401,7 @@ func StartRetryLoop(ctx context.Context) {
 
 			isBlockingUrgentLog := i <= idxOfLastUrgentNeedResendLog
 			if isBlockingUrgentLog {
-				logrus.Infof("is blocking urgent, %d(%s) <= %d(%s)",
+				logrus.Infof("is blocking urgent, %d(%d) <= %d(%d)",
 					i, needResendLogs[i].ID, idxOfLastUrgentNeedResendLog, needResendLogs[idxOfLastUrgentNeedResendLog].ID)
 			}
 
@@ -579,7 +579,7 @@ func pickLaunchLogsPendingTooLong(logs []*LaunchLog) (rst []*LaunchLog) {
 		return logs[0 : oldBoundaryLineIdx+1]
 	}
 
-	return nil
+	return []*LaunchLog{}
 }
 
 func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
