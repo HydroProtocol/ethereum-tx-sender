@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"github.com/jinzhu/gorm"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -68,19 +67,12 @@ func TestPickLaunchLogsPendingTooLongWhenNoLogs(t *testing.T) {
 	assert.Len(t, resendingLogs, 0)
 }
 
-func TestEmptySlice(t *testing.T) {
-	var emptySlice []int
-	assert.Nil(t, emptySlice)
-	assert.Equal(t, 0, len(emptySlice))
-
-	for i := range emptySlice {
-		logrus.Infoln(i)
-	}
-
-	emptySlice = returnEmptySlice()
-	assert.NotNil(t, emptySlice)
+func TestNilSlice(t *testing.T) {
+	nilSlice := returnNilSlice()
+	assert.Nil(t, nilSlice)
+	assert.Equal(t, 0, len(nilSlice))
 }
 
-func returnEmptySlice() []int {
-	return []int{}
+func returnNilSlice() []int {
+	return nil
 }
