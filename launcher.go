@@ -384,16 +384,29 @@ func StartRetryLoop(ctx context.Context) {
 			}
 		}
 
+		idxOfLastUrgentNeedResendLog := -1
+		for i, launchLog := range needResendLogs {
+			if launchLog.IsUrgent {
+				idxOfLastUrgentNeedResendLog = i
+			}
+		}
+
 		logrus.Infof("resending long pending logs, num: %d", len(needResendLogs))
 		var err error
-		for _, launchLog := range needResendLogs {
+		for i, launchLog := range needResendLogs {
 			// try to load launch log before retry
 			if ok := tryLoadLaunchLogReceipt(launchLog); ok {
 				continue
 			}
 
+			isBlockingUrgentLog := i <= idxOfLastUrgentNeedResendLog
+			if isBlockingUrgentLog {
+				logrus.Infof("is blocking urgent, %d(%d) <= %d(%d)",
+					i, needResendLogs[i].ID, idxOfLastUrgentNeedResendLog, needResendLogs[idxOfLastUrgentNeedResendLog].ID)
+			}
+
 			start := time.Now()
-			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs)
+			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs, isBlockingUrgentLog)
 
 			if gasPrice.Equal(launchLog.GasPrice) {
 				logrus.Infof("Retry gas Price is same, skip ID: %d", launchLog.ID)
@@ -457,8 +470,14 @@ func StartRetryLoop(ctx context.Context) {
 
 }
 
-func determineGasPriceForRetryLaunchLog(launchLog *LaunchLog, longestPendingSecs int) decimal.Decimal {
-	suggestGasPrice := getCurrentGasPrice(launchLog.IsUrgent)
+func determineGasPriceForRetryLaunchLog(
+	launchLog *LaunchLog,
+	longestPendingSecs int,
+	isBlockingUrgentLog bool,
+) decimal.Decimal {
+	treatAsUrgent := isBlockingUrgentLog || launchLog.IsUrgent
+
+	suggestGasPrice := getCurrentGasPrice(treatAsUrgent)
 
 	minRetryGasPrice := launchLog.GasPrice.Mul(decimal.New(115, -2))
 	gasPrice := decimal.Max(suggestGasPrice, minRetryGasPrice)
@@ -523,19 +542,44 @@ func pickLatestLogForEachNonce(logs []*LaunchLog) (rst []*LaunchLog) {
 }
 
 func pickLaunchLogsPendingTooLong(logs []*LaunchLog) (rst []*LaunchLog) {
+	// make sure logs are sort by nonce asc
+	sort.Slice(logs, func(i, j int) bool {
+		return logs[i].Nonce.Int64 < logs[j].Nonce.Int64
+	})
+
 	timeoutForLaunchlogPendingInSecs := config.RetryPendingSecondsThreshold
+	timeoutForUrgentLaunchlogPendingInSecs := config.RetryPendingSecondsThresholdForUrgent
 
-	for _, launchLog := range logs {
-		gapBackward := time.Duration(-1*timeoutForLaunchlogPendingInSecs) * time.Second
+	// in case urgent not set
+	if timeoutForUrgentLaunchlogPendingInSecs <= 0 {
+		timeoutForUrgentLaunchlogPendingInSecs = timeoutForLaunchlogPendingInSecs
+	}
+
+	oldBoundaryLineIdx := -1
+	for i, launchLog := range logs {
+
+		var gapBackward time.Duration
+		if launchLog.IsUrgent {
+			gapBackward = time.Duration(-1*timeoutForUrgentLaunchlogPendingInSecs) * time.Second
+		} else {
+			gapBackward = time.Duration(-1*timeoutForLaunchlogPendingInSecs) * time.Second
+		}
+
 		oldBoundaryLine := time.Now().Add(gapBackward).UTC()
-
 		tooOld := launchLog.CreatedAt.Before(oldBoundaryLine)
+
 		if tooOld {
-			rst = append(rst, launchLog)
+			oldBoundaryLineIdx = i
 		}
 	}
 
-	return
+	if oldBoundaryLineIdx >= 0 {
+		logrus.Infof("pick pending too long, %d/%d", oldBoundaryLineIdx+1, len(logs))
+
+		return logs[0 : oldBoundaryLineIdx+1]
+	}
+
+	return []*LaunchLog{}
 }
 
 func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
