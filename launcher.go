@@ -437,7 +437,7 @@ func StartRetryLoop(ctx context.Context) {
 
 				if er != nil && strings.Contains(er.Error(), "nonce too low") {
 					// It means one of the tx with this nonce is finalized. Skip...
-					logrus.Info("launch_log retry return nonce too low. skip")
+					logrus.Infof("launch_log retry return nonce too low. skip id: %d", launchLog.ID)
 					return nil
 				}
 
@@ -595,6 +595,7 @@ func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
 		Nonce:    launchLog.Nonce,
 		Hash:     launchLog.Hash,
 		GasPrice: launchLog.GasPrice,
+		IsUrgent: launchLog.IsUrgent,
 	}
 
 	if err := tx.Save(newLog).Error; err != nil {
