@@ -595,6 +595,7 @@ func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
 		Nonce:    launchLog.Nonce,
 		Hash:     launchLog.Hash,
 		GasPrice: launchLog.GasPrice,
+		IsUrgent: launchLog.IsUrgent,
 	}
 
 	if err := tx.Save(newLog).Error; err != nil {
