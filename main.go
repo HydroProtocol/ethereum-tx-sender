@@ -56,6 +56,8 @@ func run() int {
 		}
 	}
 
+	logrus.Infof("config is: %+v", config)
+
 	ethrpcClient = ethrpc.New(config.EthereumNodeUrl)
 
 	log.AutoSetLogLevel()
