@@ -441,6 +441,12 @@ func StartRetryLoop(ctx context.Context) {
 					return nil
 				}
 
+				if er != nil {
+					logrus.Infof("sendEthLaunchLogWithGasPrice() failed, sendEthLaunchLogWithGasPrice(id: %d, gasPrice: %s), err: %s",
+						launchLog.ID, gasPrice, er)
+					return er
+				}
+
 				if er = insertRetryLaunchLog(tx, launchLog); er != nil {
 					return er
 				}
