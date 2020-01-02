@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"git.ddex.io/infrastructure/ethereum-launcher/api"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
-	"github.com/onrik/ethrpc"
-	"git.ddex.io/lib/monitor"
 	"github.com/HydroProtocol/nights-watch"
 	"github.com/HydroProtocol/nights-watch/plugin"
 	"github.com/HydroProtocol/nights-watch/structs"
+	"github.com/onrik/ethrpc"
 	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
@@ -48,7 +47,6 @@ func (w *Watcher) StartWatcher() {
 		}
 
 		_ = w.saveBlockNumber(int(txAndReceipt.Receipt.GetBlockNumber()))
-		monitor.Value("block_number", float64(txAndReceipt.Receipt.GetBlockNumber()))
 		log := models.LaunchLogDao.FindLogByHash(txAndReceipt.Receipt.GetTxHash())
 
 		if log.ID == 0 && log.From == "" {

@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"git.ddex.io/lib/monitor"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 )
@@ -66,8 +64,6 @@ var maxGasPrice = decimal.New(100, 9)       // 100 Gwei
 var minGasPrice = decimal.New(1, 9)         // 1 Gwei
 
 func StartFetcher(ctx context.Context) {
-	go monitor.StartMonitorHttpServer(ctx)
-
 	firstTime := true
 
 	for {
@@ -101,21 +97,6 @@ func StartFetcher(ctx context.Context) {
 		var egsRes EtherGasStationResponse
 		_ = json.Unmarshal(resBytes, &egsRes)
 		prices = getPrices(&egsRes)
-
-		exactFloat64 := func(d decimal.Decimal) float64 {
-			f, exact := d.Float64()
-
-			if !exact {
-				panic(fmt.Errorf("not exact float64 decimal is %s", d.String()))
-			}
-
-			return f
-		}
-
-		monitor.Value("average", exactFloat64(prices.Average))
-		monitor.Value("high", exactFloat64(prices.High))
-		monitor.Value("low", exactFloat64(prices.Low))
-		monitor.Value("proposed", exactFloat64(prices.Proposed))
 
 		logrus.Infof("new price fetched: %v", string(resBytes))
 	}

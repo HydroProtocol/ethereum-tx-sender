@@ -7,8 +7,6 @@ import (
 	"git.ddex.io/infrastructure/ethereum-launcher/launcher"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"git.ddex.io/infrastructure/ethereum-launcher/watcher"
-	"git.ddex.io/lib/log"
-	"git.ddex.io/lib/monitor"
 	"github.com/onrik/ethrpc"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -21,20 +19,17 @@ func main() {
 }
 
 func run() int {
+	//logrus.SetLevel(logrus.DebugLevel)
+
 	configs, _ := config.InitConfig()
 	ctx, stop := context.WithCancel(context.Background())
-
 	logrus.Infof("config is: %+v", configs)
 
 	ethrpcClient := ethrpc.New(configs.EthereumNodeUrl)
-
-	log.AutoSetLogLevel()
-
 	models.ConnectDB(configs.DatabaseURL)
 	defer models.DB.Close()
 
 	go waitExitSignal(stop)
-	go monitor.StartMonitorHttpServer(ctx)
 
 	watcherClient := watcher.NewWatcher(ctx, configs.EthereumNodeUrl, ethrpcClient)
 	go watcherClient.StartWatcher()

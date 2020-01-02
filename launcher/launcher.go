@@ -11,7 +11,6 @@ import (
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"git.ddex.io/infrastructure/ethereum-launcher/pkm"
 	"git.ddex.io/infrastructure/ethereum-launcher/utils"
-	"git.ddex.io/lib/monitor"
 	"github.com/jinzhu/gorm"
 	"github.com/onrik/ethrpc"
 	"github.com/shopspring/decimal"
@@ -50,8 +49,6 @@ func StartSendLoop(ctx context.Context) {
 		urgentGasPrice := gas.GetCurrentGasPrice(true)
 
 		for i := 0; i < len(launchLogs); i++ {
-			start := time.Now()
-
 			launchLog := launchLogs[i]
 
 			if launchLog.Hash.Valid {
@@ -68,8 +65,6 @@ func StartSendLoop(ctx context.Context) {
 			}
 
 			if err != nil {
-
-				monitor.Count("launcher_shoot_failed")
 				logrus.Errorf("shoot launch log error id %d, err %v, err msg: %s", launchLog.ID, err, err.Error())
 
 				if strings.Contains(strings.ToLower(err.Error()), "nonce too low") {
@@ -89,8 +84,6 @@ func StartSendLoop(ctx context.Context) {
 			}
 
 			if err = models.DB.Save(launchLog).Error; err != nil {
-				monitor.Count("launcher_update_failed")
-
 				if strings.Contains(err.Error(), "duplicate key") && strings.Contains(err.Error(), "launch_logs_hash") {
 					var l models.LaunchLog
 					models.DB.Model(&models.LaunchLog{}).First(&l, "hash = ?", launchLog.Hash.String)
@@ -105,7 +98,6 @@ func StartSendLoop(ctx context.Context) {
 
 			models.DB.First(launchLog, launchLog.ID)
 			api.SendLogStatusToSubscriber(launchLog, nil)
-			monitor.Time("launcher_send_log", float64(time.Since(start))/1000000)
 		}
 	}
 }
@@ -154,7 +146,6 @@ func StartRetryLoop(ctx context.Context) {
 					i, needResendLogs[i].ID, idxOfLastUrgentNeedResendLog, needResendLogs[idxOfLastUrgentNeedResendLog].ID)
 			}
 
-			start := time.Now()
 			gasPrice := determineGasPriceForRetryLaunchLog(launchLog, longestPendingSecs, isBlockingUrgentLog)
 
 			if gasPrice.Equal(launchLog.GasPrice) {
@@ -206,17 +197,8 @@ func StartRetryLoop(ctx context.Context) {
 			})
 
 			if err != nil {
-				monitor.Count("launcher_retry_failed")
 				logrus.Errorf("insert launch log error id %d, err %v", launchLog.ID, err)
 				panic(err)
-			}
-
-			if isNewLaunchLogCreated {
-				monitor.Count("launcher_retry_count")
-				monitor.Time("launcher_retry", float64(time.Since(start))/1000000)
-
-				gasPriceInGwei, _ := gasPrice.Div(decimal.New(1, 9)).Float64()
-				monitor.Value("launcher_retry_gas_price_in_gwei", gasPriceInGwei)
 			}
 		}
 

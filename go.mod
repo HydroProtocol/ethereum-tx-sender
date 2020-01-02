@@ -4,8 +4,6 @@ go 1.12
 
 require (
 	cloud.google.com/go v0.43.0 // indirect
-	git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c
-	git.ddex.io/lib/monitor v0.0.0-20190730042322-bfe12938b7da
 	github.com/HydroProtocol/hydro-sdk-backend v0.0.41
 	github.com/HydroProtocol/nights-watch v0.1.8
 	github.com/davecgh/go-spew v1.1.1
