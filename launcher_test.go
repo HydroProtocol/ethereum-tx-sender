@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -13,10 +14,10 @@ func TestPickLaunchLogsPendingTooLongWithNoUrgent(t *testing.T) {
 	config.RetryPendingSecondsThreshold = 90
 	config.RetryPendingSecondsThresholdForUrgent = 60
 
-	var logs []*LaunchLog
+	var logs []*models.LaunchLog
 	for i := 0; i <= 10; i++ {
 		// -100, -85, -70, ..., 50
-		log := &LaunchLog{
+		log := &models.LaunchLog{
 			Model: gorm.Model{ID: uint(i), CreatedAt: time.Now().Add(-100 * time.Second).Add(time.Duration(i*15) * time.Second)},
 			Nonce: sql.NullInt64{Valid: true, Int64: int64(i)},
 		}
@@ -35,10 +36,10 @@ func TestPickLaunchLogsPendingTooLongWithUrgent(t *testing.T) {
 	config.RetryPendingSecondsThreshold = 90
 	config.RetryPendingSecondsThresholdForUrgent = 60
 
-	var logs []*LaunchLog
+	var logs []*models.LaunchLog
 	for i := 0; i <= 10; i++ {
 		// -100, -85, -70, -55, ..., 50
-		log := &LaunchLog{
+		log := &models.LaunchLog{
 			Model: gorm.Model{ID: uint(i), CreatedAt: time.Now().Add(-100 * time.Second).Add(time.Duration(i*15) * time.Second)},
 			Nonce: sql.NullInt64{Valid: true, Int64: int64(i)},
 		}
@@ -61,7 +62,7 @@ func TestPickLaunchLogsPendingTooLongWhenNoLogs(t *testing.T) {
 	config.RetryPendingSecondsThreshold = 90
 	config.RetryPendingSecondsThresholdForUrgent = 60
 
-	var logs []*LaunchLog
+	var logs []*models.LaunchLog
 	resendingLogs := pickLaunchLogsPendingTooLong(logs)
 
 	assert.Len(t, resendingLogs, 0)

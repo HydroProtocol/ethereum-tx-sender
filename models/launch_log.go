@@ -45,13 +45,13 @@ func init(){
 
 func (*launchLogDao)GetAllLogsWithStatus(status string) []*LaunchLog {
 	var launchLogs []*LaunchLog
-	db.Where("status = ?", status).Find(&launchLogs)
+	DB.Where("status = ?", status).Find(&launchLogs)
 	return launchLogs
 }
 
 func (*launchLogDao)FindLogByHash(hash string) *LaunchLog {
 	var launchLog LaunchLog
-	db.Where("hash = ?", hash).First(&launchLog)
+	DB.Where("hash = ?", hash).First(&launchLog)
 	return &launchLog
 }
 

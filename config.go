@@ -14,11 +14,6 @@ type Config struct {
 	RetryPendingSecondsThreshold          int             `json:"retry_pending_seconds_threshold"`
 	RetryPendingSecondsThresholdForUrgent int             `json:"retry_pending_seconds_threshold_for_urgent"`
 	EthereumNodeUrl                       string          `json:"ethereum_node_url"`
-	//TODO remove pkm, instead of pkm interface
-	PkmUrl string `json:"pkm_url"`
-	//TODO remove redis, use pg to decrease dependency
-	RedisUrl                 string `json:"redis_url"`
-	RedisBlockNumberCacheKey string `json:"redis_block_number_cache_key"`
 }
 
 func InitConfig() (*Config, error) {

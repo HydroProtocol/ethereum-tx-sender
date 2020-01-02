@@ -8,17 +8,17 @@ import (
 	"net/url"
 )
 
-var db *gorm.DB
+var DB *gorm.DB
 
 func ConnectDB(dbUrl string) {
 	if dbUrl == "" {
-		logrus.Fatal("empty db url")
+		logrus.Fatal("empty DB url")
 	}
 
 	_url, err := url.Parse(dbUrl)
 
 	if err != nil {
-		logrus.Fatalf("parse db url failed %s", dbUrl)
+		logrus.Fatalf("parse DB url failed %s", dbUrl)
 	}
 
 	host := _url.Hostname()
@@ -44,6 +44,6 @@ func ConnectDB(dbUrl string) {
 		logrus.Fatalf("failed to connect database args: %s err: %+v", args, err)
 	}
 
-	db = _db
-	db.LogMode(true)
+	DB = _db
+	DB.LogMode(true)
 }

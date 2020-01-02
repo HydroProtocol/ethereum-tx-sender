@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -60,7 +61,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 	}
 
 	var count int
-	if err := db.Model(&LaunchLog{}).Where("item_type = ? and item_id = ?", msg.ItemType, msg.ItemId).Count(&count).Error; err != nil {
+	if err := models.DB.Model(&models.LaunchLog{}).Where("item_type = ? and item_id = ?", msg.ItemType, msg.ItemId).Count(&count).Error; err != nil {
 		return nil, fmt.Errorf("get item_type and item_id count error %v", err)
 	}
 
@@ -68,7 +69,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		return nil, fmt.Errorf("item_type and item_id exists !!")
 	}
 
-	log := &LaunchLog{
+	log := &models.LaunchLog{
 		Hash: sql.NullString{
 			Valid: false,
 		},
@@ -85,7 +86,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 		Status:   pb.LaunchLogStatus_CREATED.String(),
 	}
 
-	if err = db.Create(log).Error; err != nil {
+	if err = models.DB.Create(log).Error; err != nil {
 		return nil, err
 	}
 
@@ -98,7 +99,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 	// otherwise, golang cant's cast the pointer back
 	var cb CreateCallbackFunc
 
-	cb = func(l *LaunchLog, err error) {
+	cb = func(l *models.LaunchLog, err error) {
 		logrus.Infof("Create callback for log %d, error: %+v", l.ID, err)
 		if err != nil {
 			errCh <- err
@@ -134,19 +135,19 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 	}
 }
 
-type CreateCallbackFunc func(l *LaunchLog, err error)
+type CreateCallbackFunc func(l *models.LaunchLog, err error)
 
 func (*server) Hello(ctx context.Context, msg *pb.HelloMessage) (*pb.HelloReply, error) {
 	return &pb.HelloReply{}, nil
 }
 
 func (*server) Get(ctx context.Context, msg *pb.GetMessage) (*pb.GetReply, error) {
-	var logs []*LaunchLog
+	var logs []*models.LaunchLog
 
 	if msg.Hash != "" {
-		db.Where("hash = ?", msg.Hash).Find(&logs)
+		models.DB.Where("hash = ?", msg.Hash).Find(&logs)
 	} else if msg.ItemType != "" && msg.ItemId != "" {
-		db.Where("item_type = ? and item_id = ?", msg.ItemType, msg.ItemId).Find(&logs)
+		models.DB.Where("item_type = ? and item_id = ?", msg.ItemType, msg.ItemId).Find(&logs)
 	} else {
 		return nil, fmt.Errorf("Need hash or (item_type, item_id) msg: %v", msg)
 	}
@@ -181,7 +182,7 @@ func getSubscribeHubKey(itemType, itemId string) string {
 	return fmt.Sprintf("Type:%s-ID:%s", itemType, itemId)
 }
 
-func sendLogStatusToSubscriber(log *LaunchLog, err error) {
+func sendLogStatusToSubscriber(log *models.LaunchLog, err error) {
 	logrus.Infof("sendLogStatusToSubscriber for log %d", log.ID)
 
 	key := getSubscribeHubKey(log.ItemType, log.ItemID)

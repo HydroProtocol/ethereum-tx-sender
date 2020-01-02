@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"git.ddex.io/lib/monitor"
 	"time"
 )
@@ -13,7 +14,7 @@ func startDatabaseExporter(ctx context.Context) {
 	for {
 		time.Sleep(10 * time.Second)
 
-		launchLogs := getAllLogsWithStatus(pendingStatusName)
+		launchLogs := models.LaunchLogDao.GetAllLogsWithStatus(pendingStatusName)
 		monitor.Value("pending_log", float64(len(launchLogs)))
 
 		longPendingLogCount := 0

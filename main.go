@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"git.ddex.io/lib/ethrpc"
 	"git.ddex.io/lib/hotconfig"
 	"git.ddex.io/lib/log"
@@ -40,8 +41,6 @@ func run() int {
 			DatabaseURL:                  "postgres://localhost:5432/launcher",
 			MaxGasPriceForRetry:          decimal.New(5, 9), // 5 Gwei
 			RetryPendingSecondsThreshold: 10,                // 10 s
-			RedisUrl:                     "redis://localhost:6379/0",
-			RedisBlockNumberCacheKey:     "EthereumLauncherCacheKey",
 		}
 	}
 
@@ -51,9 +50,8 @@ func run() int {
 
 	log.AutoSetLogLevel()
 
-	connectDB()
-	connectRedis()
-	defer db.Close()
+	models.ConnectDB(config.DatabaseURL)
+	defer models.DB.Close()
 
 	go waitExitSignal(stop)
 	go monitor.StartMonitorHttpServer(ctx)

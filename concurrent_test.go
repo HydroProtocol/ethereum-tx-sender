@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/jinzhu/gorm"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -17,9 +18,9 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 		DatabaseURL: "postgres://david:@localhost:5432/launcher",
 	}
 
-	connectDB()
-	db.Unscoped().Delete(LaunchLog{}, "'1' = ?", "1")
-	db.Model(&LaunchLog{}).Create(&LaunchLog{
+	models.ConnectDB(config.DatabaseURL)
+	models.DB.Unscoped().Delete(models.LaunchLog{}, "'1' = ?", "1")
+	models.DB.Model(&models.LaunchLog{}).Create(&models.LaunchLog{
 		From:     "0x0",
 		To:       "0x1",
 		Value:    decimal.Zero,
@@ -35,11 +36,11 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 		},
 	})
 
-	var originalLog LaunchLog
-	var anotherOriginalLog LaunchLog
-	db.Model(&LaunchLog{}).Where("item_type = ? and item_id = ?", "T", "id").Scan(&originalLog)
-	db.Model(&LaunchLog{}).Where("item_type = ? and item_id = ?", "T", "id").Scan(&anotherOriginalLog)
-	db.LogMode(true)
+	var originalLog models.LaunchLog
+	var anotherOriginalLog models.LaunchLog
+	models.DB.Model(&models.LaunchLog{}).Where("item_type = ? and item_id = ?", "T", "id").Scan(&originalLog)
+	models.DB.Model(&models.LaunchLog{}).Where("item_type = ? and item_id = ?", "T", "id").Scan(&anotherOriginalLog)
+	models.DB.LogMode(true)
 	wg := sync.WaitGroup{}
 	// set status loop
 	wg.Add(1)
@@ -49,7 +50,7 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 		_ = executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
 			time.Sleep(100 * time.Millisecond)
 			logrus.Info("loop 1 in")
-			var reloadedLog LaunchLog
+			var reloadedLog models.LaunchLog
 
 			if err = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", originalLog.ID).Scan(&reloadedLog).Error; err != nil {
 				logrus.Info("loop 1 lock error")
@@ -64,7 +65,7 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 				return nil
 			}
 
-			if err = tx.Model(LaunchLog{}).Where(
+			if err = tx.Model(models.LaunchLog{}).Where(
 				"item_type = ? and item_id = ? and status = ? and hash != ?",
 				originalLog.ItemType,
 				originalLog.ItemID,
@@ -99,7 +100,7 @@ func TestRetryAndOriginalTxSuccess(t *testing.T) {
 			logrus.Info("loop 2 in")
 
 			// optimistic lock the retried launchlog
-			var reloadedLog LaunchLog
+			var reloadedLog models.LaunchLog
 			if er = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", originalLog.ID).Scan(&reloadedLog).Error; er != nil {
 				logrus.Info("loop 2 lock error 1", er)
 				return er

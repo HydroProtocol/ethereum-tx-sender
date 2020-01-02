@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/sirupsen/logrus"
 	"sync"
 )
@@ -19,7 +20,7 @@ func loadLastNonce(from string) int64 {
 	nonce := int64(n) - 1
 
 	var maxNonceInDB sql.NullInt64
-	db.Raw(`select max(nonce) from launch_logs where "from" = ?`, from).Scan(&maxNonceInDB)
+	models.DB.Raw(`select max(nonce) from launch_logs where "from" = ?`, from).Scan(&maxNonceInDB)
 
 	if !maxNonceInDB.Valid {
 		return nonce

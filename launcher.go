@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"git.ddex.io/lib/ethrpc"
 	"git.ddex.io/lib/monitor"
 	"github.com/jinzhu/gorm"
@@ -52,7 +53,7 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) (err e
 			return
 		}
 
-		tx := db.Begin()
+		tx := models.DB.Begin()
 		err = tx.Exec(`set transaction isolation level repeatable read`).Error
 
 		if err != nil {
@@ -77,7 +78,7 @@ func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) (err e
 	return
 }
 
-func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt int) error {
+func handleLaunchLogStatus(log *models.LaunchLog, result bool, gasUsed int, executedAt int) error {
 	var statusCode pb.LaunchLogStatus
 
 	if result {
@@ -93,7 +94,7 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt 
 	log.ExecutedAt = uint64(executedAt)
 
 	err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
-		var reloadedLog LaunchLog
+		var reloadedLog models.LaunchLog
 
 		if err = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", log.ID).Scan(&reloadedLog).Error; err != nil {
 			return err
@@ -104,7 +105,7 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt 
 			return nil
 		}
 
-		if err = tx.Model(LaunchLog{}).Where(
+		if err = tx.Model(models.LaunchLog{}).Where(
 			"item_type = ? and item_id = ? and status = ? and hash != ?",
 			log.ItemType,
 			log.ItemID,
@@ -135,13 +136,13 @@ func handleLaunchLogStatus(log *LaunchLog, result bool, gasUsed int, executedAt 
 	}
 
 	// reload
-	db.First(log, log.ID)
+	models.DB.First(log, log.ID)
 	sendLogStatusToSubscriber(log, nil)
 
 	return nil
 }
 
-func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
+func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
 	isNewLog := true
 
 	if launchLog.Nonce.Valid {
@@ -236,7 +237,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *LaunchLog, gasPrice decimal.Decimal
 
 }
 
-func tryLoadLaunchLogReceipt(launchLog *LaunchLog) bool {
+func tryLoadLaunchLogReceipt(launchLog *models.LaunchLog) bool {
 	receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
 
 	if err != nil || receipt == nil || receipt.TransactionHash == "" {
@@ -277,7 +278,7 @@ func StartSendLoop(ctx context.Context) {
 	logrus.Info("send loop start!")
 
 	for {
-		launchLogs := getAllLogsWithStatus(pb.LaunchLogStatus_CREATED.String())
+		launchLogs := models.LaunchLogDao.GetAllLogsWithStatus(pb.LaunchLogStatus_CREATED.String())
 
 		if len(launchLogs) == 0 {
 			select {
@@ -338,12 +339,12 @@ func StartSendLoop(ctx context.Context) {
 				}
 			}
 
-			if err = db.Save(launchLog).Error; err != nil {
+			if err = models.DB.Save(launchLog).Error; err != nil {
 				monitor.Count("launcher_update_failed")
 
 				if strings.Contains(err.Error(), "duplicate key") && strings.Contains(err.Error(), "launch_logs_hash") {
-					var l LaunchLog
-					db.Model(&LaunchLog{}).First(&l, "hash = ?", launchLog.Hash.String)
+					var l models.LaunchLog
+					models.DB.Model(&models.LaunchLog{}).First(&l, "hash = ?", launchLog.Hash.String)
 					logrus.Errorf("update launch log error id %d, err %v, same hash id: %d", launchLog.ID, err, l.ID)
 				} else {
 					logrus.Errorf("update launch log error id %d, err %v", launchLog.ID, err)
@@ -353,7 +354,7 @@ func StartSendLoop(ctx context.Context) {
 				panic(err)
 			}
 
-			db.First(launchLog, launchLog.ID)
+			models.DB.First(launchLog, launchLog.ID)
 			sendLogStatusToSubscriber(launchLog, nil)
 			monitor.Time("launcher_send_log", float64(time.Since(start))/1000000)
 		}
@@ -367,7 +368,7 @@ func StartRetryLoop(ctx context.Context) {
 	pendingStatusName := pb.LaunchLogStatus_PENDING.String()
 
 	for {
-		launchLogs := getAllLogsWithStatus(pendingStatusName)
+		launchLogs := models.LaunchLogDao.GetAllLogsWithStatus(pendingStatusName)
 		longestPendingSecs := getLongestPendingSeconds(launchLogs)
 
 		latestLogsForEachNonce := pickLatestLogForEachNonce(launchLogs)
@@ -417,7 +418,7 @@ func StartRetryLoop(ctx context.Context) {
 
 			err = executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
 				// optimistic lock the retried launchlog g
-				var reloadedLog LaunchLog
+				var reloadedLog models.LaunchLog
 				if er = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", launchLog.ID).Scan(&reloadedLog).Error; er != nil {
 					return er
 				}
@@ -477,7 +478,7 @@ func StartRetryLoop(ctx context.Context) {
 }
 
 func determineGasPriceForRetryLaunchLog(
-	launchLog *LaunchLog,
+	launchLog *models.LaunchLog,
 	longestPendingSecs int,
 	isBlockingUrgentLog bool,
 ) decimal.Decimal {
@@ -505,7 +506,7 @@ func increaseGasPriceAccordingToPendingTime(pendingSeconds int, gasPrice decimal
 	return gasAfterIncrease
 }
 
-func getLongestPendingSeconds(logs []*LaunchLog) int {
+func getLongestPendingSeconds(logs []*models.LaunchLog) int {
 	pendingSeconds := 0
 
 	for _, log := range logs {
@@ -520,9 +521,9 @@ func getLongestPendingSeconds(logs []*LaunchLog) int {
 	return pendingSeconds
 }
 
-func pickLatestLogForEachNonce(logs []*LaunchLog) (rst []*LaunchLog) {
+func pickLatestLogForEachNonce(logs []*models.LaunchLog) (rst []*models.LaunchLog) {
 	// nonce -> latest launcher log
-	holderMap := make(map[string]*LaunchLog)
+	holderMap := make(map[string]*models.LaunchLog)
 
 	for _, log := range logs {
 		key := fmt.Sprintf("%s-%d", log.From, log.Nonce.Int64)
@@ -547,7 +548,7 @@ func pickLatestLogForEachNonce(logs []*LaunchLog) (rst []*LaunchLog) {
 	return
 }
 
-func pickLaunchLogsPendingTooLong(logs []*LaunchLog) (rst []*LaunchLog) {
+func pickLaunchLogsPendingTooLong(logs []*models.LaunchLog) (rst []*models.LaunchLog) {
 	// make sure logs are sort by nonce asc
 	sort.Slice(logs, func(i, j int) bool {
 		return logs[i].Nonce.Int64 < logs[j].Nonce.Int64
@@ -585,11 +586,11 @@ func pickLaunchLogsPendingTooLong(logs []*LaunchLog) (rst []*LaunchLog) {
 		return logs[0 : oldBoundaryLineIdx+1]
 	}
 
-	return []*LaunchLog{}
+	return []*models.LaunchLog{}
 }
 
-func insertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
-	newLog := &LaunchLog{
+func insertRetryLaunchLog(tx *gorm.DB, launchLog *models.LaunchLog) error {
+	newLog := &models.LaunchLog{
 		ItemType: launchLog.ItemType,
 		ItemID:   launchLog.ItemID,
 		Status:   pb.LaunchLogStatus_PENDING.String(),

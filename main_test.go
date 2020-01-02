@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/davecgh/go-spew/spew"
 	"os"
 	"testing"
@@ -16,10 +17,10 @@ func TestRun(t *testing.T) {
 		DatabaseURL: "postgres://david:@localhost:5432/launcher",
 	}
 
-	connectDB()
+	models.ConnectDB(config.DatabaseURL)
 
-	var reloadedLog LaunchLog
-	db.Model(&reloadedLog).Debug().Set("gorm:query_option", "FOR UPDATE").Where("id = ?", 1).Scan(&reloadedLog)
+	var reloadedLog models.LaunchLog
+	models.DB.Model(&reloadedLog).Debug().Set("gorm:query_option", "FOR UPDATE").Where("id = ?", 1).Scan(&reloadedLog)
 	//run()
 }
 
