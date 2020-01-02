@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/HydroProtocol/nights-watch"
 	"github.com/HydroProtocol/nights-watch/plugin"
 	"github.com/HydroProtocol/nights-watch/structs"
@@ -17,9 +18,7 @@ func TestWathcher(t *testing.T) {
 			return
 		}
 
-		var log LaunchLog
-		db.Where("hash = ?", txAndReceipt.Receipt.GetTxHash()).First(&log)
-
+		log := models.LaunchLogDao.FindLogByHash(txAndReceipt.Receipt.GetTxHash())
 		if log.ID == 0 && log.From == "" {
 			return
 		}
