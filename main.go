@@ -36,7 +36,7 @@ func run() int {
 
 	go api.StartGRPCServer(ctx)
 	go api.StartHTTPServer(ctx)
-	launcher.StartLauncher(ctx)
+	launcher.StartLauncher(ctx, ethrpcClient)
 
 	return 0
 }

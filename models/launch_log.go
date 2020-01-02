@@ -9,11 +9,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const STATUS_CREATED = "created"
-const STATUS_PENDING = "pending"
-const STATUS_RETRIED = "retried"
-const STATUS_SUCCESS = "success"
-
 type LaunchLog struct {
 	gorm.Model
 
@@ -35,7 +30,6 @@ type LaunchLog struct {
 }
 
 type launchLogDao struct {
-
 }
 
 var LaunchLogDao *launchLogDao

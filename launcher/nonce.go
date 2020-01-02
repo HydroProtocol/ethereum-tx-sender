@@ -3,17 +3,36 @@ package launcher
 import (
 	"database/sql"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
-	"github.com/onrik/ethrpc"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
-var nonceCacheMutex = &sync.Mutex{}
-var nonceCache = make(map[string]int64)
-var ethrpcClient *ethrpc.EthRPC
+func (l*launcher)getNextNonce(from string) int64 {
+	l.nonceCacheMutex.Lock()
+	defer l.nonceCacheMutex.Unlock()
 
-func loadLastNonce(from string) int64 {
-	n, err := ethrpcClient.EthGetTransactionCount(from, "pending")
+	if _, exist := l.nonceCache[from]; !exist {
+		nonce := l.loadLastNonce(from)
+		l.nonceCache[from] = nonce
+	}
+
+	return l.nonceCache[from] + 1
+}
+
+func (l*launcher)deleteCachedNonce(from string) {
+	l.nonceCacheMutex.Lock()
+	defer l.nonceCacheMutex.Unlock()
+	delete(l.nonceCache, from)
+}
+
+func (l*launcher)increaseNextNonce(from string) {
+	l.nonceCacheMutex.Lock()
+	defer l.nonceCacheMutex.Unlock()
+
+	l.nonceCache[from] = l.nonceCache[from] + 1
+}
+
+func (l*launcher)loadLastNonce(from string) int64 {
+	n, err := l.ethrpcClient.EthGetTransactionCount(from, "pending")
 
 	if err != nil {
 		logrus.Errorf("%s load transcations count error: %+v", from, err)
@@ -39,29 +58,4 @@ func loadLastNonce(from string) int64 {
 	logrus.Infof("load last nonce for %s %d", from, res)
 
 	return res
-}
-
-func deleteCachedNonce(from string) {
-	nonceCacheMutex.Lock()
-	defer nonceCacheMutex.Unlock()
-	delete(nonceCache, from)
-}
-
-func getNextNonce(from string) int64 {
-	nonceCacheMutex.Lock()
-	defer nonceCacheMutex.Unlock()
-
-	if _, exist := nonceCache[from]; !exist {
-		nonce := loadLastNonce(from)
-		nonceCache[from] = nonce
-	}
-
-	return nonceCache[from] + 1
-}
-
-func increaseNextNonce(from string) {
-	nonceCacheMutex.Lock()
-	defer nonceCacheMutex.Unlock()
-
-	nonceCache[from] = nonceCache[from] + 1
 }

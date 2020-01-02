@@ -47,7 +47,7 @@ func GetCurrentGasPrice(isUrgent bool) decimal.Decimal {
 	currentGas, err := Get()
 
 	if err != nil {
-		logrus.Error("Can't get gas price, will use default")
+		panic("Can't get gas price, will use default")
 	}
 
 	if isUrgent {

@@ -3,7 +3,6 @@ package pkm
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"git.ddex.io/infrastructure/ethereum-launcher/config"
 	"github.com/HydroProtocol/hydro-sdk-backend/sdk/crypto"
 	"github.com/HydroProtocol/hydro-sdk-backend/sdk/signer"
 	"github.com/HydroProtocol/hydro-sdk-backend/sdk/types"
@@ -23,8 +22,7 @@ type localPKM struct {
 
 var LocalPKM *localPKM
 
-func InitPKM() {
-	privateKeys := config.Config.PrivateKeys
+func InitPKM(privateKeys string) Pkm {
 	privateKeyList := strings.Split(privateKeys, ",")
 
 	keyMap := make(map[string]*ecdsa.PrivateKey)
@@ -39,9 +37,12 @@ func InitPKM() {
 		keyMap[publicKey] = privateKey
 		logrus.Infof("parse private key success, public key is %s", publicKey)
 	}
+
 	LocalPKM = &localPKM{
 		KeyMap: keyMap,
 	}
+
+	return LocalPKM
 }
 
 func (l localPKM) Sign(t *ethrpc.T) (string, error) {

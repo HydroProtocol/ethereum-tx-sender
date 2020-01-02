@@ -19,10 +19,18 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
-func StartSendLoop(ctx context.Context) {
+type launcher struct {
+	ethrpcClient *ethrpc.EthRPC
+	pkm pkm.Pkm
+	nonceCache map[string]int64
+	nonceCacheMutex *sync.Mutex
+}
+
+func (l*launcher)StartSendLoop(ctx context.Context) {
 	logrus.Info("send loop start!")
 
 	for {
@@ -52,23 +60,23 @@ func StartSendLoop(ctx context.Context) {
 			launchLog := launchLogs[i]
 
 			if launchLog.Hash.Valid {
-				if ok := tryLoadLaunchLogReceipt(launchLog); ok {
+				if ok := l.tryLoadLaunchLogReceipt(launchLog); ok {
 					continue
 				}
 			}
 
 			var err error
 			if launchLog.IsUrgent {
-				_, err = sendEthLaunchLogWithGasPrice(launchLog, urgentGasPrice)
+				_, err = l.sendEthLaunchLogWithGasPrice(launchLog, urgentGasPrice)
 			} else {
-				_, err = sendEthLaunchLogWithGasPrice(launchLog, normalGasPrice)
+				_, err = l.sendEthLaunchLogWithGasPrice(launchLog, normalGasPrice)
 			}
 
 			if err != nil {
 				logrus.Errorf("shoot launch log error id %d, err %v, err msg: %s", launchLog.ID, err, err.Error())
 
 				if strings.Contains(strings.ToLower(err.Error()), "nonce too low") {
-					deleteCachedNonce(launchLog.From)
+					l.deleteCachedNonce(launchLog.From)
 					continue
 				} else if strings.Contains(strings.ToLower(err.Error()), "insufficient funds") {
 					launchLog.Status = pb.LaunchLogStatus_SEND_FAILED.String()
@@ -102,7 +110,7 @@ func StartSendLoop(ctx context.Context) {
 	}
 }
 
-func StartRetryLoop(ctx context.Context) {
+func (l*launcher)StartRetryLoop(ctx context.Context) {
 	logrus.Info("retry loop start!")
 
 	pendingStatusName := pb.LaunchLogStatus_PENDING.String()
@@ -136,7 +144,7 @@ func StartRetryLoop(ctx context.Context) {
 		var err error
 		for i, launchLog := range needResendLogs {
 			// try to load launch log before retry
-			if ok := tryLoadLaunchLogReceipt(launchLog); ok {
+			if ok := l.tryLoadLaunchLogReceipt(launchLog); ok {
 				continue
 			}
 
@@ -173,7 +181,7 @@ func StartRetryLoop(ctx context.Context) {
 					return er
 				}
 
-				_, er = sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
+				_, er = l.sendEthLaunchLogWithGasPrice(launchLog, gasPrice)
 
 				if er != nil && strings.Contains(er.Error(), "nonce too low") {
 					// It means one of the tx with this nonce is finalized. Skip...
@@ -206,7 +214,7 @@ func StartRetryLoop(ctx context.Context) {
 	}
 }
 
-func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
+func (l*launcher)sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
 	isNewLog := true
 
 	if launchLog.Nonce.Valid {
@@ -216,7 +224,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 	var nonce uint64
 
 	if isNewLog {
-		nonce = uint64(getNextNonce(launchLog.From))
+		nonce = uint64(l.getNextNonce(launchLog.From))
 	} else {
 		nonce = uint64(launchLog.Nonce.Int64)
 	}
@@ -235,14 +243,14 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 	// try to get gas limitation with retry times
 	if launchLog.GasLimit == 0 {
 		for i := 0; i < 2; i++ {
-			var gas int
-			gas, err = ethrpcClient.EthEstimateGas(t)
+			var estimateGas int
+			estimateGas, err = l.ethrpcClient.EthEstimateGas(t)
 
 			if err != nil {
 				continue
 			}
 
-			gasLimit = uint64(float64(gas) * 1.2)
+			gasLimit = uint64(float64(estimateGas) * 1.2)
 			launchLog.GasLimit = gasLimit
 			break
 		}
@@ -256,7 +264,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 
 	t.Gas = int(gasLimit)
 
-	rawTxHex, err := pkm.LocalPKM.Sign(&t)
+	rawTxHex, err := l.pkm.Sign(&t)
 
 	if err != nil {
 		return "", fmt.Errorf("sign error %+v", err)
@@ -269,7 +277,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 		Valid:  true,
 	}
 
-	hashOnChain, err := ethrpcClient.EthSendRawTransaction(rawTxHex)
+	hashOnChain, err := l.ethrpcClient.EthSendRawTransaction(rawTxHex)
 
 	if err != nil {
 		return "", err
@@ -291,7 +299,7 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 			Valid: true,
 		}
 
-		increaseNextNonce(launchLog.From)
+		l.increaseNextNonce(launchLog.From)
 	}
 
 	launchLog.Status = pb.LaunchLogStatus_PENDING.String()
@@ -300,8 +308,8 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 	return hash, err
 }
 
-func tryLoadLaunchLogReceipt(launchLog *models.LaunchLog) bool {
-	receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
+func (l*launcher)tryLoadLaunchLogReceipt(launchLog *models.LaunchLog) bool {
+	receipt, err := l.ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
 
 	if err != nil || receipt == nil || receipt.TransactionHash == "" {
 		return false
@@ -312,7 +320,7 @@ func tryLoadLaunchLogReceipt(launchLog *models.LaunchLog) bool {
 
 	gasUsed := receipt.GasUsed
 
-	block, err := ethrpcClient.EthGetBlockByNumber(receipt.BlockNumber, false)
+	block, err := l.ethrpcClient.EthGetBlockByNumber(receipt.BlockNumber, false)
 
 	if err != nil {
 		return false
@@ -451,8 +459,14 @@ func pickLaunchLogsPendingTooLong(logs []*models.LaunchLog) (rst []*models.Launc
 	return []*models.LaunchLog{}
 }
 
-func StartLauncher(ctx context.Context) {
-	pkm.InitPKM()
-	go StartRetryLoop(ctx)
-	StartSendLoop(ctx)
+func StartLauncher(ctx context.Context, ethrpcClient *ethrpc.EthRPC) {
+	l := launcher{
+		ethrpcClient:ethrpcClient,
+		pkm:pkm.InitPKM(config.Config.PrivateKeys),
+		nonceCache:make(map[string]int64),
+		nonceCacheMutex: &sync.Mutex{},
+	}
+
+	go l.StartRetryLoop(ctx)
+	l.StartSendLoop(ctx)
 }
