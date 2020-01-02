@@ -8,12 +8,13 @@ import (
 	"github.com/HydroProtocol/hydro-sdk-backend/sdk/signer"
 	"github.com/HydroProtocol/hydro-sdk-backend/sdk/types"
 	"github.com/HydroProtocol/hydro-sdk-backend/utils"
+	"github.com/onrik/ethrpc"
 	"github.com/sirupsen/logrus"
 	"strings"
 )
 
 type Pkm interface {
-	Sign(from string, t*types.Transaction) (string, error)
+	Sign(t *ethrpc.T) (string, error)
 }
 
 type localPKM struct {
@@ -22,7 +23,7 @@ type localPKM struct {
 
 var LocalPKM *localPKM
 
-func init() {
+func InitPKM() {
 	privateKeys := config.Config.PrivateKeys
 	privateKeyList := strings.Split(privateKeys, ",")
 
@@ -43,18 +44,28 @@ func init() {
 	}
 }
 
-func (l localPKM) Sign(from string, t *types.Transaction) (string, error) {
-	privateKey, ok := l.KeyMap[from]
+func (l localPKM) Sign(t *ethrpc.T) (string, error) {
+	privateKey, ok := l.KeyMap[t.From]
 	if !ok {
-		return "", fmt.Errorf("cannot sign by account %s", from)
+		return "", fmt.Errorf("cannot sign by account %s", t.From)
 	}
 
-	signedTransaction, err := signer.SignTx(t, privateKey)
+	tx := types.NewTransaction(
+		uint64(t.Nonce),
+		t.To,
+		t.Value,
+		uint64(t.Gas),
+		t.GasPrice,
+		//make([]byte, 0),
+		utils.Hex2Bytes(t.Data),
+	)
+	fmt.Println(utils.ToJsonString(tx))
+	signedTransaction, err := signer.SignTx(tx, privateKey)
 
 	if err != nil {
 		utils.Errorf("sign transaction error: %v", err)
 		panic(err)
 	}
 
-	return utils.Bytes2Hex(signedTransaction.Signature), nil
+	return utils.Bytes2HexP(signer.EncodeRlp(signedTransaction)), nil
 }

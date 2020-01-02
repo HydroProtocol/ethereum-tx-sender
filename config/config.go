@@ -16,7 +16,7 @@ type config struct {
 	RetryPendingSecondsThreshold          int             `json:"retry_pending_seconds_threshold"`
 	RetryPendingSecondsThresholdForUrgent int             `json:"retry_pending_seconds_threshold_for_urgent"`
 	EthereumNodeUrl                       string          `json:"ethereum_node_url"`
-	PrivateKeys                           string          `json:"PRIVATE_KEYS"`
+	PrivateKeys                           string          `json:"private_keys"`
 }
 
 func InitConfig() (*config, error) {
@@ -45,12 +45,18 @@ func InitConfig() (*config, error) {
 		return nil, fmt.Errorf("init RETRY_PENDING_SECONDS_THRESHOLD error, err %v", err)
 	}
 
+	privateKeys := os.Getenv("PRIVATE_KEYS")
+	if privateKeys == "" {
+		return nil, fmt.Errorf("need PRIVATE_KEYS env")
+	}
+
 	Config = &config{
 		EthereumNodeUrl:                       ethereumNodeUrl,
 		DatabaseURL:                           databaseUrl,
 		MaxGasPriceForRetry:                   maxGasPriceForRetry,
 		RetryPendingSecondsThreshold:          int(retryPendingSecondsThreshold),
 		RetryPendingSecondsThresholdForUrgent: int(retryPendingSecondsThresholdForUrgent),
+		PrivateKeys:                           privateKeys,
 	}
 
 	return Config, nil

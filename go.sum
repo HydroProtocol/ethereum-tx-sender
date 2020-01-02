@@ -4,8 +4,6 @@ cloud.google.com/go v0.37.4/go.mod h1:NHPJ89PdicEuT9hdPXMROBD91xc5uRDxsMtSB16k7h
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=
 cloud.google.com/go v0.43.0 h1:banaiRPAM8kUVYneOSkhgcDsLzEvL25FinuiSZaH/2w=
 cloud.google.com/go v0.43.0/go.mod h1:BOSR3VbTLkk6FDC/TcffxP4NF/FFBGA5ku+jvKOP7pg=
-git.ddex.io/lib/ethrpc v0.0.0-20190731052521-4ffbd8ac3a2d h1:3OqbEjRoEoqykZ1cMr/esnn3HD3N4nXnRMAIPHnDNiU=
-git.ddex.io/lib/ethrpc v0.0.0-20190731052521-4ffbd8ac3a2d/go.mod h1:E381mqJ7NNk+EZTip5D35BFkaQjwlnPXY1/LDZem07M=
 git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c h1:0bjzz4ztzf2cVsAnWmAdesO+TrF1wBiSagRrtCBxZ5c=
 git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c/go.mod h1:IuneNXaR8p6f4kh/iNobGONuHfZ/6iKcrUnU7V2HTrY=
 git.ddex.io/lib/monitor v0.0.0-20190730042322-bfe12938b7da h1:eTN4OZDKo9RAOomyNDfKHZ/Lu9+gHUCFaJ1Wtti410o=

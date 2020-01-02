@@ -12,7 +12,6 @@ import (
 	"git.ddex.io/infrastructure/ethereum-launcher/pkm"
 	"git.ddex.io/infrastructure/ethereum-launcher/utils"
 	"git.ddex.io/lib/monitor"
-	"github.com/HydroProtocol/hydro-sdk-backend/sdk/types"
 	"github.com/jinzhu/gorm"
 	"github.com/onrik/ethrpc"
 	"github.com/shopspring/decimal"
@@ -240,14 +239,14 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 		nonce = uint64(launchLog.Nonce.Int64)
 	}
 
-	t := types.NewTransaction(
-		nonce,
-		launchLog.To,
-		utils.DecimalToBigInt(launchLog.Value),
-		launchLog.GasLimit,
-		utils.DecimalToBigInt(gasPrice),
-		launchLog.Data,
-	)
+	t := ethrpc.T{
+		From:     launchLog.From,
+		To:       launchLog.To,
+		Data:     utils.Encode(launchLog.Data),
+		Value:    utils.DecimalToBigInt(launchLog.Value),
+		GasPrice: utils.DecimalToBigInt(gasPrice),
+		Nonce:    int(nonce),
+	}
 
 	var gasLimit uint64
 	// if gas limit is empty
@@ -273,9 +272,9 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 		gasLimit = launchLog.GasLimit
 	}
 
-	t.GasLimit = gasLimit
+	t.Gas = int(gasLimit)
 
-	rawTxHex, err := pkm.LocalPKM.Sign(launchLog.From, t)
+	rawTxHex, err := pkm.LocalPKM.Sign(&t)
 
 	if err != nil {
 		return "", fmt.Errorf("sign error %+v", err)
@@ -471,6 +470,7 @@ func pickLaunchLogsPendingTooLong(logs []*models.LaunchLog) (rst []*models.Launc
 }
 
 func StartLauncher(ctx context.Context) {
+	pkm.InitPKM()
 	go StartRetryLoop(ctx)
 	StartSendLoop(ctx)
 }
