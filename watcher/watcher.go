@@ -1,9 +1,11 @@
-package main
+package watcher
 
 import (
 	"context"
 	"fmt"
+	"git.ddex.io/infrastructure/ethereum-launcher/api"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	"git.ddex.io/lib/ethrpc"
 	"git.ddex.io/lib/monitor"
 	"github.com/HydroProtocol/nights-watch"
 	"github.com/HydroProtocol/nights-watch/plugin"
@@ -13,18 +15,39 @@ import (
 	"time"
 )
 
-var lastSavedBlockNumber int
-var updateBlockNumberMutex *sync.Mutex
+type Watcher struct {
+	lastSavedBlockNumber   int
+	updateBlockNumberMutex *sync.Mutex
+	ethereumNodeUrl        string
+	ethrpcClient           *ethrpc.EthRPC
+	ctx                    context.Context
+}
 
-func startNightWatch(ctx context.Context) {
-	w := nights_watch.NewHttpBasedEthWatcher(ctx, config.EthereumNodeUrl)
+func NewWatcher(ctx context.Context, ethNodeUrl string, ethrpcClient *ethrpc.EthRPC) *Watcher {
 
-	w.RegisterTxReceiptPlugin(plugin.NewTxReceiptPlugin(func(txAndReceipt *structs.RemovableTxAndReceipt) {
+	lastSavedBlockNumber, err := models.BlockNumberDao.GetCurrentBlockNumber()
+	if err != nil {
+		panic(err)
+	}
+
+	return &Watcher{
+		ctx:                    ctx,
+		lastSavedBlockNumber:   lastSavedBlockNumber,
+		updateBlockNumberMutex: &sync.Mutex{},
+		ethereumNodeUrl:        ethNodeUrl,
+		ethrpcClient:           ethrpcClient,
+	}
+}
+
+func (w *Watcher) StartWatcher() {
+	nightWatch := nights_watch.NewHttpBasedEthWatcher(w.ctx, w.ethereumNodeUrl)
+
+	nightWatch.RegisterTxReceiptPlugin(plugin.NewTxReceiptPlugin(func(txAndReceipt *structs.RemovableTxAndReceipt) {
 		if txAndReceipt.IsRemoved {
 			return
 		}
 
-		_ = saveBlockNumber(int(txAndReceipt.Receipt.GetBlockNumber()))
+		_ = w.saveBlockNumber(int(txAndReceipt.Receipt.GetBlockNumber()))
 		monitor.Value("block_number", float64(txAndReceipt.Receipt.GetBlockNumber()))
 		log := models.LaunchLogDao.FindLogByHash(txAndReceipt.Receipt.GetTxHash())
 
@@ -38,7 +61,7 @@ func startNightWatch(ctx context.Context) {
 		executedAt := int(txAndReceipt.TimeStamp)
 
 		// to get gasUsed, TODO: return gasUsed from receipt
-		receipt, err := ethrpcClient.EthGetTransactionReceipt(txAndReceipt.Receipt.GetTxHash())
+		receipt, err := w.ethrpcClient.EthGetTransactionReceipt(txAndReceipt.Receipt.GetTxHash())
 
 		if err != nil || receipt == nil || receipt.TransactionHash == "" {
 			logrus.Errorf("get receipt gasUsed failed, err: %+v, receipt: %+v", err, receipt)
@@ -46,19 +69,22 @@ func startNightWatch(ctx context.Context) {
 			gasUsed = receipt.GasUsed
 		}
 
+		var handledLog *models.LaunchLog
 		if txAndReceipt.Receipt.GetResult() {
 			result = "successful"
-			err = handleLaunchLogStatus(log, true, gasUsed, executedAt)
+			handledLog, err = models.HandleLaunchLogStatus(log, true, gasUsed, executedAt)
 		} else {
 			result = "failed"
-			err = handleLaunchLogStatus(log, false, gasUsed, executedAt)
+			handledLog, err = models.HandleLaunchLogStatus(log, false, gasUsed, executedAt)
 		}
+
+		api.SendLogStatusToSubscriber(handledLog, err)
 
 		logrus.Infof("tx %s err: %+v result: %s", txAndReceipt.Receipt.GetTxHash(), err, result)
 	}))
 
 	for {
-		err := w.RunTillExitFromBlock(uint64(getHighestSyncedBlock()))
+		err := nightWatch.RunTillExitFromBlock(uint64(getHighestSyncedBlock()))
 
 		if err != nil {
 			logrus.Errorf("watcher error: %+v", err)
@@ -67,12 +93,11 @@ func startNightWatch(ctx context.Context) {
 	}
 }
 
+func (w *Watcher) saveBlockNumber(blockNum int) error {
+	w.updateBlockNumberMutex.Lock()
+	defer w.updateBlockNumberMutex.Unlock()
 
-func saveBlockNumber(blockNum int) error {
-	updateBlockNumberMutex.Lock()
-	defer updateBlockNumberMutex.Unlock()
-
-	if blockNum <= lastSavedBlockNumber {
+	if blockNum <= w.lastSavedBlockNumber {
 		return nil
 	}
 
@@ -81,7 +106,7 @@ func saveBlockNumber(blockNum int) error {
 	if err != nil {
 		logrus.Warnf("save block number %d fail", blockNum)
 	} else {
-		lastSavedBlockNumber = blockNum
+		w.lastSavedBlockNumber = blockNum
 		logrus.Infof("save block number %d success", blockNum)
 	}
 

@@ -45,6 +45,21 @@ func Get() (*GasPrices, error) {
 	return prices,nil
 }
 
+func GetCurrentGasPrice(isUrgent bool) decimal.Decimal {
+	currentGas, err := Get()
+
+	if err != nil {
+		logrus.Error("Can't get gas price, will use default")
+	}
+
+	if isUrgent {
+		// 1.1 times high
+		return currentGas.Proposed.Mul(decimal.NewFromFloat(1.1))
+	}
+
+	return currentGas.Proposed
+}
+
 var Gwei = decimal.New(1, 9)                // Gwei
 var EtherGasStationUnit = decimal.New(1, 8) // 0.1 Gwei
 var maxGasPrice = decimal.New(100, 9)       // 100 Gwei

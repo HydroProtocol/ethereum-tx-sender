@@ -1,12 +1,17 @@
-package main
+package launcher
 
 import (
 	"context"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"git.ddex.io/infrastructure/ethereum-launcher/api"
+	"git.ddex.io/infrastructure/ethereum-launcher/config"
+	"git.ddex.io/infrastructure/ethereum-launcher/gas"
 	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	"git.ddex.io/infrastructure/ethereum-launcher/pkm"
+	"git.ddex.io/infrastructure/ethereum-launcher/utils"
 	"git.ddex.io/lib/ethrpc"
 	"git.ddex.io/lib/monitor"
 	"github.com/jinzhu/gorm"
@@ -14,7 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"math"
 	"math/big"
-	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
@@ -36,110 +40,6 @@ func decimalToBigInt(d decimal.Decimal) *big.Int {
 		logrus.Fatalf("decimal to big int failed d: %s", d.String())
 	}
 	return n
-}
-
-func executeInRepeatableReadTransaction(callback func(tx *gorm.DB) error) (err error) {
-	tryTimes := 0
-
-	for i := 0; i < 5; i++ {
-		if tryTimes != 0 {
-			time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
-		}
-
-		tryTimes = tryTimes + 1
-
-		if tryTimes > 3 {
-			logrus.Errorf("tx finial failed after several retries")
-			return
-		}
-
-		tx := models.DB.Begin()
-		err = tx.Exec(`set transaction isolation level repeatable read`).Error
-
-		if err != nil {
-			tx.Rollback()
-			continue
-		}
-
-		if err = callback(tx); err != nil {
-			tx.Rollback()
-			continue
-		}
-
-		if err = tx.Commit().Error; err != nil {
-			tx.Rollback()
-			logrus.Error("commit failed")
-			continue
-		}
-
-		break
-	}
-
-	return
-}
-
-func handleLaunchLogStatus(log *models.LaunchLog, result bool, gasUsed int, executedAt int) error {
-	var statusCode pb.LaunchLogStatus
-
-	if result {
-		statusCode = pb.LaunchLogStatus_SUCCESS
-	} else {
-		statusCode = pb.LaunchLogStatus_FAILED
-	}
-
-	status := pb.LaunchLogStatus_name[int32(statusCode)]
-
-	log.Status = status
-	log.GasUsed = uint64(gasUsed)
-	log.ExecutedAt = uint64(executedAt)
-
-	err := executeInRepeatableReadTransaction(func(tx *gorm.DB) (err error) {
-		var reloadedLog models.LaunchLog
-
-		if err = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", log.ID).Scan(&reloadedLog).Error; err != nil {
-			return err
-		}
-
-		if reloadedLog.Status != pb.LaunchLogStatus_PENDING.String() &&
-			reloadedLog.Status != pb.LaunchLogStatus_CREATED.String() {
-			return nil
-		}
-
-		if err = tx.Model(models.LaunchLog{}).Where(
-			"item_type = ? and item_id = ? and status = ? and hash != ?",
-			log.ItemType,
-			log.ItemID,
-			pb.LaunchLogStatus_PENDING.String(),
-			log.Hash,
-		).Update(map[string]interface{}{
-			"status": pb.LaunchLogStatus_RETRIED.String(),
-		}).Error; err != nil {
-			logrus.Errorf("set retry status failed log: %+v err: %+v", log, err)
-			return err
-		}
-
-		if err = tx.Model(log).Updates(map[string]interface{}{
-			"status":      status,
-			"gas_used":    gasUsed,
-			"executed_at": executedAt,
-		}).Error; err != nil {
-			logrus.Errorf("set final status failed log: %+v err: %+v", log, err)
-			return err
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		sendLogStatusToSubscriber(log, err)
-		return err
-	}
-
-	// reload
-	models.DB.First(log, log.ID)
-	sendLogStatusToSubscriber(log, nil)
-
-	return nil
 }
 
 func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
@@ -192,13 +92,13 @@ func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.
 
 	t.Gas = int(gasLimit)
 
-	rawTxHex, err := pkmSign(&t)
+	rawTxHex, err := pkm.LocalPKM.Sign(&t)
 
 	if err != nil {
 		return "", fmt.Errorf("sign error %+v", err)
 	}
 
-	hash := EncodeHex(Keccak256(DecodeHex(rawTxHex)))
+	hash := utils.EncodeHex(utils.Keccak256(utils.DecodeHex(rawTxHex)))
 
 	launchLog.Hash = sql.NullString{
 		String: hash,
@@ -257,14 +157,16 @@ func tryLoadLaunchLogReceipt(launchLog *models.LaunchLog) bool {
 
 	executedAt := block.Timestamp
 
+	var handledLog *models.LaunchLog
 	if status == 1 {
 		result = "successful"
-		err = handleLaunchLogStatus(launchLog, true, gasUsed, executedAt)
+		handledLog, err = models.HandleLaunchLogStatus(launchLog, true, gasUsed, executedAt)
 	} else {
 		result = "failed"
-		err = handleLaunchLogStatus(launchLog, false, gasUsed, executedAt)
+		handledLog, err = models.HandleLaunchLogStatus(launchLog, false, gasUsed, executedAt)
 	}
 
+	api.SendLogStatusToSubscriber(handledLog, err)
 	logrus.Infof("log %s receipt request finial %s, err: %+v", launchLog.Hash.String, result, err)
 
 	if err != nil {
@@ -288,7 +190,7 @@ func StartSendLoop(ctx context.Context) {
 			case <-time.After(10 * time.Second):
 				logrus.Infof("no logs need to be sent. sleep 10s")
 				continue
-			case <-newRequestChannel:
+			case <-api.NewRequestChannel:
 				// new request has come, start working!
 				logrus.Info("newRequestChannel got message!")
 				continue
@@ -297,8 +199,8 @@ func StartSendLoop(ctx context.Context) {
 
 		logrus.Infof("%d created log to be send", len(launchLogs))
 
-		normalGasPrice := getCurrentGasPrice(false)
-		urgentGasPrice := getCurrentGasPrice(true)
+		normalGasPrice := gas.GetCurrentGasPrice(false)
+		urgentGasPrice := gas.GetCurrentGasPrice(true)
 
 		for i := 0; i < len(launchLogs); i++ {
 			start := time.Now()
@@ -350,12 +252,12 @@ func StartSendLoop(ctx context.Context) {
 					logrus.Errorf("update launch log error id %d, err %v", launchLog.ID, err)
 				}
 
-				sendLogStatusToSubscriber(launchLog, err)
+				api.SendLogStatusToSubscriber(launchLog, err)
 				panic(err)
 			}
 
 			models.DB.First(launchLog, launchLog.ID)
-			sendLogStatusToSubscriber(launchLog, nil)
+			api.SendLogStatusToSubscriber(launchLog, nil)
 			monitor.Time("launcher_send_log", float64(time.Since(start))/1000000)
 		}
 	}
@@ -416,7 +318,7 @@ func StartRetryLoop(ctx context.Context) {
 
 			isNewLaunchLogCreated := false
 
-			err = executeInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
+			err = models.ExecuteInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
 				// optimistic lock the retried launchlog g
 				var reloadedLog models.LaunchLog
 				if er = tx.Model(&reloadedLog).Set("gorm:query_option", "FOR UPDATE").Where("id = ?", launchLog.ID).Scan(&reloadedLog).Error; er != nil {
@@ -448,7 +350,7 @@ func StartRetryLoop(ctx context.Context) {
 					return er
 				}
 
-				if er = insertRetryLaunchLog(tx, launchLog); er != nil {
+				if er = models.LaunchLogDao.InsertRetryLaunchLog(tx, launchLog); er != nil {
 					return er
 				}
 
@@ -484,13 +386,13 @@ func determineGasPriceForRetryLaunchLog(
 ) decimal.Decimal {
 	treatAsUrgent := isBlockingUrgentLog || launchLog.IsUrgent
 
-	suggestGasPrice := getCurrentGasPrice(treatAsUrgent)
+	suggestGasPrice := gas.GetCurrentGasPrice(treatAsUrgent)
 
 	minRetryGasPrice := launchLog.GasPrice.Mul(decimal.New(115, -2))
 	gasPrice := decimal.Max(suggestGasPrice, minRetryGasPrice)
 	increasedGasPrice := increaseGasPriceAccordingToPendingTime(longestPendingSecs, gasPrice)
 
-	maxGasPrice := config.MaxGasPriceForRetry
+	maxGasPrice := config.Config.MaxGasPriceForRetry
 	determinedPrice := decimal.Min(increasedGasPrice, maxGasPrice)
 	logrus.Debugf("gas price for retry launch log(nonce: %v), suggest: %s, minRetry: %s, increasedGasPrice: %s, final: %s", launchLog.Nonce, suggestGasPrice, minRetryGasPrice, increasedGasPrice, determinedPrice)
 
@@ -554,8 +456,8 @@ func pickLaunchLogsPendingTooLong(logs []*models.LaunchLog) (rst []*models.Launc
 		return logs[i].Nonce.Int64 < logs[j].Nonce.Int64
 	})
 
-	timeoutForLaunchlogPendingInSecs := config.RetryPendingSecondsThreshold
-	timeoutForUrgentLaunchlogPendingInSecs := config.RetryPendingSecondsThresholdForUrgent
+	timeoutForLaunchlogPendingInSecs := config.Config.RetryPendingSecondsThreshold
+	timeoutForUrgentLaunchlogPendingInSecs := config.Config.RetryPendingSecondsThresholdForUrgent
 
 	// in case urgent not set
 	if timeoutForUrgentLaunchlogPendingInSecs <= 0 {
@@ -587,32 +489,6 @@ func pickLaunchLogsPendingTooLong(logs []*models.LaunchLog) (rst []*models.Launc
 	}
 
 	return []*models.LaunchLog{}
-}
-
-func insertRetryLaunchLog(tx *gorm.DB, launchLog *models.LaunchLog) error {
-	newLog := &models.LaunchLog{
-		ItemType: launchLog.ItemType,
-		ItemID:   launchLog.ItemID,
-		Status:   pb.LaunchLogStatus_PENDING.String(),
-		From:     launchLog.From,
-		To:       launchLog.To,
-		Value:    launchLog.Value,
-		GasLimit: launchLog.GasLimit,
-		Data:     launchLog.Data,
-		Nonce:    launchLog.Nonce,
-		Hash:     launchLog.Hash,
-		GasPrice: launchLog.GasPrice,
-		IsUrgent: launchLog.IsUrgent,
-	}
-
-	if err := tx.Save(newLog).Error; err != nil {
-		return err
-	}
-
-	// TODO use subscribe instead
-	// err = updateTransactionAndTrades(newLog)
-
-	return nil
 }
 
 func StartLauncher(ctx context.Context) {

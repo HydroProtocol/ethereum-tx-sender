@@ -1,9 +1,10 @@
-package main
+package api
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+	"git.ddex.io/infrastructure/ethereum-launcher/gas"
 	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/shopspring/decimal"
@@ -17,7 +18,7 @@ import (
 )
 
 // notify the send loop to start
-var newRequestChannel = make(chan int, 100)
+var NewRequestChannel = make(chan int, 100)
 
 //go:generate protoc -I.  --go_out=plugins=grpc:. ./messages/messages.proto
 
@@ -44,7 +45,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 	var gasPrice decimal.Decimal
 
 	if msg.GasPrice == "" {
-		gasPrice = getCurrentGasPrice(msg.IsUrgent)
+		gasPrice = gas.GetCurrentGasPrice(msg.IsUrgent)
 	} else {
 		gasPrice, err = decimal.NewFromString(msg.GasPrice)
 		if err != nil {
@@ -125,7 +126,7 @@ func (*server) Create(ctx context.Context, msg *pb.CreateMessage) (*pb.CreateRep
 	defer subscribeHub.Remove(key, &cb)
 
 	// notify the send loop to work
-	newRequestChannel <- 1
+	NewRequestChannel <- 1
 
 	select {
 	case err := <-errCh:
@@ -182,8 +183,8 @@ func getSubscribeHubKey(itemType, itemId string) string {
 	return fmt.Sprintf("Type:%s-ID:%s", itemType, itemId)
 }
 
-func sendLogStatusToSubscriber(log *models.LaunchLog, err error) {
-	logrus.Infof("sendLogStatusToSubscriber for log %d", log.ID)
+func SendLogStatusToSubscriber(log *models.LaunchLog, err error) {
+	logrus.Infof("SendLogStatusToSubscriber for log %d", log.ID)
 
 	key := getSubscribeHubKey(log.ItemType, log.ItemID)
 
@@ -197,7 +198,7 @@ func sendLogStatusToSubscriber(log *models.LaunchLog, err error) {
 	for s, _ := range data {
 		switch v := s.(type) {
 		case pb.Launcher_SubscribeServer:
-			logrus.Infof("sendLogStatusToSubscriber for log %d, handler: pb.Launcher_SubscribeServer", log.ID)
+			logrus.Infof("SendLogStatusToSubscriber for log %d, handler: pb.Launcher_SubscribeServer", log.ID)
 			_ = v.Send(&pb.SubscribeReply{
 				Status:   pb.LaunchLogStatus(pb.LaunchLogStatus_value[log.Status]),
 				Hash:     log.Hash.String,
@@ -206,10 +207,10 @@ func sendLogStatusToSubscriber(log *models.LaunchLog, err error) {
 				ErrMsg:   log.ErrMsg,
 			})
 		case *CreateCallbackFunc:
-			logrus.Infof("sendLogStatusToSubscriber for log %d, handler: *CreateCallbackFunc", log.ID)
+			logrus.Infof("SendLogStatusToSubscriber for log %d, handler: *CreateCallbackFunc", log.ID)
 			(*v)(log, err)
 		default:
-			logrus.Errorf("sendLogStatusToSubscriber for log %d, handler: unknown, %+v, %+v", log.ID, s, v)
+			logrus.Errorf("SendLogStatusToSubscriber for log %d, handler: unknown, %+v, %+v", log.ID, s, v)
 		}
 	}
 }
@@ -271,7 +272,7 @@ func (sb *SubscribeHub) Remove(key string, handler interface{}) {
 
 var subscribeHub *SubscribeHub
 
-func startGrpcServer(ctx context.Context) {
+func StartGRPCServer(ctx context.Context) {
 	subscribeHub = &SubscribeHub{
 		m:    &sync.Mutex{},
 		data: make(map[string]map[interface{}]bool),

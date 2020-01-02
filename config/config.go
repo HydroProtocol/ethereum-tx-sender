@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"errors"
@@ -8,7 +8,9 @@ import (
 	"strconv"
 )
 
-type Config struct {
+var Config *config
+
+type config struct {
 	DatabaseURL                           string          `json:"database_url"`
 	MaxGasPriceForRetry                   decimal.Decimal `json:"max_gas_price_for_retry"`
 	RetryPendingSecondsThreshold          int             `json:"retry_pending_seconds_threshold"`
@@ -16,10 +18,15 @@ type Config struct {
 	EthereumNodeUrl                       string          `json:"ethereum_node_url"`
 }
 
-func InitConfig() (*Config, error) {
+func InitConfig() (*config, error) {
 	databaseUrl := os.Getenv("DATABASE_URL")
 	if databaseUrl == "" {
 		return nil, errors.New("need DATABASE_URL env")
+	}
+
+	ethereumNodeUrl := os.Getenv("ETHEREUM_NODE_URL")
+	if ethereumNodeUrl == "" {
+		return nil, errors.New("need ETHEREUM_NODE_URL env")
 	}
 
 	maxGasPriceForRetry, err := decimal.NewFromString(os.Getenv("MAX_GAS_PRICE_FOR_RETRY"))
@@ -37,12 +44,13 @@ func InitConfig() (*Config, error) {
 		return nil, fmt.Errorf("init RETRY_PENDING_SECONDS_THRESHOLD error, err %v", err)
 	}
 
-	config = &Config{
+	Config = &config{
+		EthereumNodeUrl:                       ethereumNodeUrl,
 		DatabaseURL:                           databaseUrl,
 		MaxGasPriceForRetry:                   maxGasPriceForRetry,
 		RetryPendingSecondsThreshold:          int(retryPendingSecondsThreshold),
 		RetryPendingSecondsThresholdForUrgent: int(retryPendingSecondsThresholdForUrgent),
 	}
 
-	return config, nil
+	return Config, nil
 }

@@ -1,14 +1,16 @@
-package main
+package launcher
 
 import (
 	"database/sql"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	"git.ddex.io/lib/ethrpc"
 	"github.com/sirupsen/logrus"
 	"sync"
 )
 
 var nonceCacheMutex = &sync.Mutex{}
 var nonceCache = make(map[string]int64)
+var ethrpcClient *ethrpc.EthRPC
 
 func loadLastNonce(from string) int64 {
 	n, err := ethrpcClient.EthGetTransactionCount(from, "pending")

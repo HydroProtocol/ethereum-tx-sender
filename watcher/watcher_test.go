@@ -1,4 +1,4 @@
-package main
+package watcher
 
 import (
 	"context"
@@ -27,10 +27,10 @@ func TestWathcher(t *testing.T) {
 
 		if txAndReceipt.Receipt.GetResult() {
 			result = "successful"
-			handleLaunchLogStatus(log, true, 0, 0)
+			models.HandleLaunchLogStatus(log, true, 0, 0)
 		} else {
 			result = "failed"
-			handleLaunchLogStatus(log, false, 0, 0)
+			models.HandleLaunchLogStatus(log, false, 0, 0)
 		}
 
 		logrus.Infof("tx %s result: %s", txAndReceipt.Receipt.GetTxHash(), result)

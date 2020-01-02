@@ -2,20 +2,50 @@ package main
 
 import (
 	"context"
+	"git.ddex.io/infrastructure/ethereum-launcher/api"
+	"git.ddex.io/infrastructure/ethereum-launcher/config"
+	"git.ddex.io/infrastructure/ethereum-launcher/launcher"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	"git.ddex.io/infrastructure/ethereum-launcher/watcher"
 	"git.ddex.io/lib/ethrpc"
-	"git.ddex.io/lib/hotconfig"
 	"git.ddex.io/lib/log"
 	"git.ddex.io/lib/monitor"
-	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-var config *Config
-var ethrpcClient *ethrpc.EthRPC
+func main() {
+	os.Exit(run())
+}
+
+func run() int {
+	configs,_ := config.InitConfig()
+	ctx, stop := context.WithCancel(context.Background())
+
+	logrus.Infof("config is: %+v", configs)
+
+	ethrpcClient := ethrpc.New(configs.EthereumNodeUrl)
+
+	log.AutoSetLogLevel()
+
+	models.ConnectDB(configs.DatabaseURL)
+	defer models.DB.Close()
+
+	go waitExitSignal(stop)
+	go monitor.StartMonitorHttpServer(ctx)
+
+	go startDatabaseExporter(ctx)
+	watcherClient := watcher.NewWatcher(ctx, configs.EthereumNodeUrl, ethrpcClient)
+	go watcherClient.StartWatcher()
+
+	go api.StartGRPCServer(ctx)
+	go api.StartHTTPServer(ctx)
+	launcher.StartLauncher(ctx)
+
+	return 0
+}
 
 func waitExitSignal(ctxStop context.CancelFunc) {
 	var exitSignal = make(chan os.Signal)
@@ -25,45 +55,4 @@ func waitExitSignal(ctxStop context.CancelFunc) {
 	<-exitSignal
 	logrus.Info("Stopping...")
 	ctxStop()
-}
-
-func run() int {
-	config = &Config{}
-	ctx, stop := context.WithCancel(context.Background())
-
-	if os.Getenv("KUBE_NAMESPACE") != "" {
-		hotconfig.Load(config, &hotconfig.Options{
-			Watch:   true,
-			Context: ctx,
-		})
-	} else {
-		config = &Config{
-			DatabaseURL:                  "postgres://localhost:5432/launcher",
-			MaxGasPriceForRetry:          decimal.New(5, 9), // 5 Gwei
-			RetryPendingSecondsThreshold: 10,                // 10 s
-		}
-	}
-
-	logrus.Infof("config is: %+v", config)
-
-	ethrpcClient = ethrpc.New(config.EthereumNodeUrl)
-
-	log.AutoSetLogLevel()
-
-	models.ConnectDB(config.DatabaseURL)
-	defer models.DB.Close()
-
-	go waitExitSignal(stop)
-	go monitor.StartMonitorHttpServer(ctx)
-
-	go startDatabaseExporter(ctx)
-	go startNightWatch(ctx) // TODO we may need a global watcher in the feature
-	go startGrpcServer(ctx)
-	StartLauncher(ctx)
-
-	return 0
-}
-
-func main() {
-	os.Exit(run())
 }

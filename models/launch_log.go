@@ -3,6 +3,7 @@ package models
 
 import (
 	"database/sql"
+	"git.ddex.io/infrastructure/ethereum-launcher/messages"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/shopspring/decimal"
@@ -41,6 +42,32 @@ var LaunchLogDao *launchLogDao
 
 func init(){
 	LaunchLogDao = &launchLogDao{}
+}
+
+func (*launchLogDao)InsertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
+	newLog := &LaunchLog{
+		ItemType: launchLog.ItemType,
+		ItemID:   launchLog.ItemID,
+		Status:   messages.LaunchLogStatus_PENDING.String(),
+		From:     launchLog.From,
+		To:       launchLog.To,
+		Value:    launchLog.Value,
+		GasLimit: launchLog.GasLimit,
+		Data:     launchLog.Data,
+		Nonce:    launchLog.Nonce,
+		Hash:     launchLog.Hash,
+		GasPrice: launchLog.GasPrice,
+		IsUrgent: launchLog.IsUrgent,
+	}
+
+	if err := tx.Save(newLog).Error; err != nil {
+		return err
+	}
+
+	// TODO use subscribe instead
+	// err = updateTransactionAndTrades(newLog)
+
+	return nil
 }
 
 func (*launchLogDao)GetAllLogsWithStatus(status string) []*LaunchLog {

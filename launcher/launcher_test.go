@@ -1,18 +1,24 @@
-package main
+package launcher
 
 import (
 	"database/sql"
+	"git.ddex.io/infrastructure/ethereum-launcher/config"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 	"time"
 )
 
 func TestPickLaunchLogsPendingTooLongWithNoUrgent(t *testing.T) {
-	config = &Config{}
-	config.RetryPendingSecondsThreshold = 90
-	config.RetryPendingSecondsThresholdForUrgent = 60
+	_ = os.Setenv("ETHEREUM_NODE_URL", "http://localhost:8545")
+	_ = os.Setenv("DATABASE_URL", "postgres://localhost:5432/launcher")
+	_ = os.Setenv("MAX_GAS_PRICE_FOR_RETRY", "50")
+	_ = os.Setenv("RETRY_PENDING_SECONDS_THRESHOLD", "90")
+	_ = os.Setenv("RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT", "60")
+
+	config.InitConfig()
 
 	var logs []*models.LaunchLog
 	for i := 0; i <= 10; i++ {
@@ -32,9 +38,13 @@ func TestPickLaunchLogsPendingTooLongWithNoUrgent(t *testing.T) {
 }
 
 func TestPickLaunchLogsPendingTooLongWithUrgent(t *testing.T) {
-	config = &Config{}
-	config.RetryPendingSecondsThreshold = 90
-	config.RetryPendingSecondsThresholdForUrgent = 60
+	_ = os.Setenv("ETHEREUM_NODE_URL", "http://localhost:8545")
+	_ = os.Setenv("DATABASE_URL", "postgres://localhost:5432/launcher")
+	_ = os.Setenv("MAX_GAS_PRICE_FOR_RETRY", "50")
+	_ = os.Setenv("RETRY_PENDING_SECONDS_THRESHOLD", "90")
+	_ = os.Setenv("RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT", "60")
+
+	config.InitConfig()
 
 	var logs []*models.LaunchLog
 	for i := 0; i <= 10; i++ {
@@ -58,9 +68,13 @@ func TestPickLaunchLogsPendingTooLongWithUrgent(t *testing.T) {
 }
 
 func TestPickLaunchLogsPendingTooLongWhenNoLogs(t *testing.T) {
-	config = &Config{}
-	config.RetryPendingSecondsThreshold = 90
-	config.RetryPendingSecondsThresholdForUrgent = 60
+	_ = os.Setenv("ETHEREUM_NODE_URL", "http://localhost:8545")
+	_ = os.Setenv("DATABASE_URL", "postgres://localhost:5432/launcher")
+	_ = os.Setenv("MAX_GAS_PRICE_FOR_RETRY", "50")
+	_ = os.Setenv("RETRY_PENDING_SECONDS_THRESHOLD", "90")
+	_ = os.Setenv("RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT", "60")
+
+	config.InitConfig()
 
 	var logs []*models.LaunchLog
 	resendingLogs := pickLaunchLogsPendingTooLong(logs)
