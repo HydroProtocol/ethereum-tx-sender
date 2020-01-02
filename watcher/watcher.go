@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"git.ddex.io/infrastructure/ethereum-launcher/api"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
-	"git.ddex.io/lib/ethrpc"
+	"github.com/onrik/ethrpc"
 	"git.ddex.io/lib/monitor"
 	"github.com/HydroProtocol/nights-watch"
 	"github.com/HydroProtocol/nights-watch/plugin"

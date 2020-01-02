@@ -3,7 +3,7 @@ package launcher
 import (
 	"database/sql"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
-	"git.ddex.io/lib/ethrpc"
+	"github.com/onrik/ethrpc"
 	"github.com/sirupsen/logrus"
 	"sync"
 )

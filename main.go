@@ -7,9 +7,9 @@ import (
 	"git.ddex.io/infrastructure/ethereum-launcher/launcher"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"git.ddex.io/infrastructure/ethereum-launcher/watcher"
-	"git.ddex.io/lib/ethrpc"
 	"git.ddex.io/lib/log"
 	"git.ddex.io/lib/monitor"
+	"github.com/onrik/ethrpc"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -21,7 +21,7 @@ func main() {
 }
 
 func run() int {
-	configs,_ := config.InitConfig()
+	configs, _ := config.InitConfig()
 	ctx, stop := context.WithCancel(context.Background())
 
 	logrus.Infof("config is: %+v", configs)

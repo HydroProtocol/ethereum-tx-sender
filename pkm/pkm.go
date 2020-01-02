@@ -4,14 +4,16 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"git.ddex.io/infrastructure/ethereum-launcher/config"
-	"git.ddex.io/lib/ethrpc"
 	"github.com/HydroProtocol/hydro-sdk-backend/sdk/crypto"
+	"github.com/HydroProtocol/hydro-sdk-backend/sdk/signer"
+	"github.com/HydroProtocol/hydro-sdk-backend/sdk/types"
+	"github.com/HydroProtocol/hydro-sdk-backend/utils"
 	"github.com/sirupsen/logrus"
 	"strings"
 )
 
 type Pkm interface {
-	Sign(t *ethrpc.T) (string, error)
+	Sign(from string, t*types.Transaction) (string, error)
 }
 
 type localPKM struct {
@@ -29,7 +31,9 @@ func init() {
 		privateKey, err := crypto.NewPrivateKeyByHex(privateKeyHex)
 		if err != nil {
 			logrus.Errorf("parse private key fail, key is num %d", idx)
+			continue
 		}
+
 		publicKey := crypto.PubKey2Address(privateKey.PublicKey)
 		keyMap[publicKey] = privateKey
 		logrus.Infof("parse private key success, public key is %s", publicKey)
@@ -39,59 +43,18 @@ func init() {
 	}
 }
 
-func (l localPKM) Sign(t *ethrpc.T) (string, error) {
-	privateKey, ok := l.KeyMap[t.From]
+func (l localPKM) Sign(from string, t *types.Transaction) (string, error) {
+	privateKey, ok := l.KeyMap[from]
 	if !ok {
-		return "", fmt.Errorf("cannot sign by account %s", t.From)
+		return "", fmt.Errorf("cannot sign by account %s", from)
 	}
 
-	//privateKey
+	signedTransaction, err := signer.SignTx(t, privateKey)
 
-	return "", nil
+	if err != nil {
+		utils.Errorf("sign transaction error: %v", err)
+		panic(err)
+	}
+
+	return utils.Bytes2Hex(signedTransaction.Signature), nil
 }
-
-//
-//type PKMResponse struct {
-//	Status       bool            `json:"success"`
-//	Data         PKMResponseData `json:"data"`
-//	ErrorMessage string          `json:"errMsg"`
-//}
-//
-//type PKMResponseData struct {
-//	TransactionId string `json:"transaction_id"`
-//	RawData       string `json:"raw_data"`
-//}
-//
-//func pkmSign(t *ethrpc.T) (string, error) {
-//	bts, _ := json.Marshal(map[string]interface{}{
-//		"from":      t.From,
-//		"to":        t.To,
-//		"data":      t.Data,
-//		"gas_price": t.GasPrice,
-//		"amount":    t.Value,
-//		"gas_limit": t.Gas,
-//		"nonce":     t.Nonce,
-//	})
-//
-//	res, err := http.Post(config.PkmUrl+"/signTransaction", "application/json", bytes.NewReader(bts))
-//
-//	if err != nil {
-//		return "", err
-//	}
-//
-//	retStr, _ := ioutil.ReadAll(res.Body)
-//
-//	if len(retStr) == 0 {
-//		return "", fmt.Errorf("empty sign result")
-//	}
-//
-//	var resp PKMResponse
-//
-//	_ = json.Unmarshal([]byte(retStr), &resp)
-//
-//	if !resp.Status {
-//		return "", fmt.Errorf("sign result error %s", resp.ErrorMessage)
-//	}
-//
-//	return resp.Data.RawData, nil
-//}
