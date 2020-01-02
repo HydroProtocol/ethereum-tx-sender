@@ -16,6 +16,7 @@ type config struct {
 	RetryPendingSecondsThreshold          int             `json:"retry_pending_seconds_threshold"`
 	RetryPendingSecondsThresholdForUrgent int             `json:"retry_pending_seconds_threshold_for_urgent"`
 	EthereumNodeUrl                       string          `json:"ethereum_node_url"`
+	PrivateKeys                           string          `json:"PRIVATE_KEYS"`
 }
 
 func InitConfig() (*config, error) {

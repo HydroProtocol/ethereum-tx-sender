@@ -7,7 +7,7 @@ require (
 	git.ddex.io/lib/ethrpc v0.0.0-20190731052521-4ffbd8ac3a2d
 	git.ddex.io/lib/log v0.0.0-20190729100049-f91fdcf0b05c
 	git.ddex.io/lib/monitor v0.0.0-20190730042322-bfe12938b7da
-	github.com/HydroProtocol/hydro-sdk-backend v0.0.39
+	github.com/HydroProtocol/hydro-sdk-backend v0.0.41
 	github.com/HydroProtocol/nights-watch v0.1.8
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect

@@ -1,34 +1,54 @@
 package pkm
 
 import (
+	"crypto/ecdsa"
 	"fmt"
+	"git.ddex.io/infrastructure/ethereum-launcher/config"
 	"git.ddex.io/lib/ethrpc"
+	"github.com/HydroProtocol/hydro-sdk-backend/sdk/crypto"
+	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 type Pkm interface {
 	Sign(t *ethrpc.T) (string, error)
 }
 
-type localPKM struct{
-	KeyMap map[string] string
+type localPKM struct {
+	KeyMap map[string]*ecdsa.PrivateKey
 }
 
 var LocalPKM *localPKM
 
-func init(){
-	LocalPKM = &localPKM{
+func init() {
+	privateKeys := config.Config.PrivateKeys
+	privateKeyList := strings.Split(privateKeys, ",")
 
+	keyMap := make(map[string]*ecdsa.PrivateKey)
+	for idx, privateKeyHex := range privateKeyList {
+		privateKey, err := crypto.NewPrivateKeyByHex(privateKeyHex)
+		if err != nil {
+			logrus.Errorf("parse private key fail, key is num %d", idx)
+		}
+		publicKey := crypto.PubKey2Address(privateKey.PublicKey)
+		keyMap[publicKey] = privateKey
+		logrus.Infof("parse private key success, public key is %s", publicKey)
+	}
+	LocalPKM = &localPKM{
+		KeyMap: keyMap,
 	}
 }
+
 func (l localPKM) Sign(t *ethrpc.T) (string, error) {
-	if _, ok := l.KeyMap[t.From]; !ok {
+	privateKey, ok := l.KeyMap[t.From]
+	if !ok {
 		return "", fmt.Errorf("cannot sign by account %s", t.From)
 	}
 
-	return "",nil
+	//privateKey
+
+	return "", nil
 }
-
-
 
 //
 //type PKMResponse struct {
