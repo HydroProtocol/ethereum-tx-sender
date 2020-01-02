@@ -9,7 +9,6 @@ type SetBlockNumberRet struct {
 }
 
 type blockNumberDao struct{
-
 }
 
 var BlockNumberDao *blockNumberDao
@@ -20,12 +19,12 @@ func init(){
 
 func (*blockNumberDao) GetCurrentBlockNumber() (int,error) {
 	var lastBlockNumber BlockNumber
-	err := DB.Raw("select last_value as block_number from serial").Find(&lastBlockNumber).Error
+	err := DB.Raw("select last_value as block_number from block_number_serial").Find(&lastBlockNumber).Error
 	return lastBlockNumber.BlockNumber, err
 }
 
 func (*blockNumberDao) IncreaseBlockNumber(blockNumber int) (int,error) {
 	var setBlockNumberRet SetBlockNumberRet
-	err := DB.Raw("select setval('serial', ?, true)", blockNumber).Find(&setBlockNumberRet).Error
+	err := DB.Raw("select setval('block_number_serial', ?, true)", blockNumber).Find(&setBlockNumberRet).Error
 	return setBlockNumberRet.BlockNumber, err
 }

@@ -40,3 +40,5 @@ create index idx_launch_logs_item
 
 create unique index uix_launch_logs_hash
     on launch_logs (hash);
+
+create sequence block_number_serial;

@@ -36,7 +36,6 @@ func run() int {
 	go waitExitSignal(stop)
 	go monitor.StartMonitorHttpServer(ctx)
 
-	go startDatabaseExporter(ctx)
 	watcherClient := watcher.NewWatcher(ctx, configs.EthereumNodeUrl, ethrpcClient)
 	go watcherClient.StartWatcher()
 
