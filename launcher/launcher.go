@@ -3,7 +3,6 @@ package launcher
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"git.ddex.io/infrastructure/ethereum-launcher/api"
 	"git.ddex.io/infrastructure/ethereum-launcher/config"
@@ -18,163 +17,11 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"math"
-	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
-
-// Encode encodes b as a hex string with 0x prefix.
-func Encode(b []byte) string {
-	enc := make([]byte, len(b)*2+2)
-	copy(enc, "0x")
-	hex.Encode(enc[2:], b)
-	return string(enc)
-}
-
-func decimalToBigInt(d decimal.Decimal) *big.Int {
-	n := new(big.Int)
-	n, ok := n.SetString(d.String(), 10)
-	if !ok {
-		logrus.Fatalf("decimal to big int failed d: %s", d.String())
-	}
-	return n
-}
-
-func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
-	isNewLog := true
-
-	if launchLog.Nonce.Valid {
-		isNewLog = false
-	}
-
-	var nonce uint64
-
-	if isNewLog {
-		nonce = uint64(getNextNonce(launchLog.From))
-	} else {
-		nonce = uint64(launchLog.Nonce.Int64)
-	}
-
-	t := ethrpc.T{
-		From:     launchLog.From,
-		To:       launchLog.To,
-		Data:     Encode(launchLog.Data),
-		Value:    decimalToBigInt(launchLog.Value),
-		GasPrice: decimalToBigInt(gasPrice),
-		Nonce:    int(nonce),
-	}
-
-	var gasLimit uint64
-	// if gas limit is empty
-	// try to get gas limitation with retry times
-	if launchLog.GasLimit == 0 {
-		for i := 0; i < 2; i++ {
-			var gas int
-			gas, err = ethrpcClient.EthEstimateGas(t)
-
-			if err != nil {
-				continue
-			}
-
-			gasLimit = uint64(float64(gas) * 1.2)
-			launchLog.GasLimit = gasLimit
-			break
-		}
-
-		if err != nil {
-			return "", fmt.Errorf("estimate gas error %+v", err)
-		}
-	} else {
-		gasLimit = launchLog.GasLimit
-	}
-
-	t.Gas = int(gasLimit)
-
-	rawTxHex, err := pkm.LocalPKM.Sign(&t)
-
-	if err != nil {
-		return "", fmt.Errorf("sign error %+v", err)
-	}
-
-	hash := utils.EncodeHex(utils.Keccak256(utils.DecodeHex(rawTxHex)))
-
-	launchLog.Hash = sql.NullString{
-		String: hash,
-		Valid:  true,
-	}
-
-	hashOnChain, err := ethrpcClient.EthSendRawTransaction(rawTxHex)
-
-	if err != nil {
-		return "", err
-	}
-
-	if hashOnChain != hash {
-		logrus.Fatalf("hashOnChain != hash, %s, %s", hashOnChain, hash)
-	} else {
-		logrus.Infof("send tx hash: %s, isNewLog: %t", hash, isNewLog)
-	}
-
-	launchLog.GasPrice = gasPrice
-
-	// only inc if isNewLaunchLog
-	// otherwise it is resend, keep the nonce
-	if isNewLog {
-		launchLog.Nonce = sql.NullInt64{
-			Int64: int64(nonce),
-			Valid: true,
-		}
-
-		increaseNextNonce(launchLog.From)
-	}
-
-	launchLog.Status = pb.LaunchLogStatus_PENDING.String()
-	logrus.Infof("send launcher log, hash: %s, rawTxString: %s", hash, rawTxHex)
-
-	return hash, err
-
-}
-
-func tryLoadLaunchLogReceipt(launchLog *models.LaunchLog) bool {
-	receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
-
-	if err != nil || receipt == nil || receipt.TransactionHash == "" {
-		return false
-	}
-
-	var result string
-	status, _ := strconv.ParseInt(receipt.Status, 0, 0)
-
-	gasUsed := receipt.GasUsed
-
-	block, err := ethrpcClient.EthGetBlockByNumber(receipt.BlockNumber, false)
-
-	if err != nil {
-		return false
-	}
-
-	executedAt := block.Timestamp
-
-	var handledLog *models.LaunchLog
-	if status == 1 {
-		result = "successful"
-		handledLog, err = models.HandleLaunchLogStatus(launchLog, true, gasUsed, executedAt)
-	} else {
-		result = "failed"
-		handledLog, err = models.HandleLaunchLogStatus(launchLog, false, gasUsed, executedAt)
-	}
-
-	api.SendLogStatusToSubscriber(handledLog, err)
-	logrus.Infof("log %s receipt request finial %s, err: %+v", launchLog.Hash.String, result, err)
-
-	if err != nil {
-		return false
-	}
-
-	return true
-}
 
 func StartSendLoop(ctx context.Context) {
 	logrus.Info("send loop start!")
@@ -264,7 +111,6 @@ func StartSendLoop(ctx context.Context) {
 }
 
 func StartRetryLoop(ctx context.Context) {
-
 	logrus.Info("retry loop start!")
 
 	pendingStatusName := pb.LaunchLogStatus_PENDING.String()
@@ -376,7 +222,139 @@ func StartRetryLoop(ctx context.Context) {
 
 		logrus.Infoln("done resending long pending logs")
 	}
+}
 
+func sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
+	isNewLog := true
+
+	if launchLog.Nonce.Valid {
+		isNewLog = false
+	}
+
+	var nonce uint64
+
+	if isNewLog {
+		nonce = uint64(getNextNonce(launchLog.From))
+	} else {
+		nonce = uint64(launchLog.Nonce.Int64)
+	}
+
+	t := ethrpc.T{
+		From:     launchLog.From,
+		To:       launchLog.To,
+		Data:     utils.Encode(launchLog.Data),
+		Value:    utils.DecimalToBigInt(launchLog.Value),
+		GasPrice: utils.DecimalToBigInt(gasPrice),
+		Nonce:    int(nonce),
+	}
+
+	var gasLimit uint64
+	// if gas limit is empty
+	// try to get gas limitation with retry times
+	if launchLog.GasLimit == 0 {
+		for i := 0; i < 2; i++ {
+			var gas int
+			gas, err = ethrpcClient.EthEstimateGas(t)
+
+			if err != nil {
+				continue
+			}
+
+			gasLimit = uint64(float64(gas) * 1.2)
+			launchLog.GasLimit = gasLimit
+			break
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("estimate gas error %+v", err)
+		}
+	} else {
+		gasLimit = launchLog.GasLimit
+	}
+
+	t.Gas = int(gasLimit)
+
+	rawTxHex, err := pkm.LocalPKM.Sign(&t)
+
+	if err != nil {
+		return "", fmt.Errorf("sign error %+v", err)
+	}
+
+	hash := utils.EncodeHex(utils.Keccak256(utils.DecodeHex(rawTxHex)))
+
+	launchLog.Hash = sql.NullString{
+		String: hash,
+		Valid:  true,
+	}
+
+	hashOnChain, err := ethrpcClient.EthSendRawTransaction(rawTxHex)
+
+	if err != nil {
+		return "", err
+	}
+
+	if hashOnChain != hash {
+		logrus.Fatalf("hashOnChain != hash, %s, %s", hashOnChain, hash)
+	} else {
+		logrus.Infof("send tx hash: %s, isNewLog: %t", hash, isNewLog)
+	}
+
+	launchLog.GasPrice = gasPrice
+
+	// only inc if isNewLaunchLog
+	// otherwise it is resend, keep the nonce
+	if isNewLog {
+		launchLog.Nonce = sql.NullInt64{
+			Int64: int64(nonce),
+			Valid: true,
+		}
+
+		increaseNextNonce(launchLog.From)
+	}
+
+	launchLog.Status = pb.LaunchLogStatus_PENDING.String()
+	logrus.Infof("send launcher log, hash: %s, rawTxString: %s", hash, rawTxHex)
+
+	return hash, err
+}
+
+func tryLoadLaunchLogReceipt(launchLog *models.LaunchLog) bool {
+	receipt, err := ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
+
+	if err != nil || receipt == nil || receipt.TransactionHash == "" {
+		return false
+	}
+
+	var result string
+	status, _ := strconv.ParseInt(receipt.Status, 0, 0)
+
+	gasUsed := receipt.GasUsed
+
+	block, err := ethrpcClient.EthGetBlockByNumber(receipt.BlockNumber, false)
+
+	if err != nil {
+		return false
+	}
+
+	executedAt := block.Timestamp
+
+	var handledLog *models.LaunchLog
+	if status == 1 {
+		result = "successful"
+		handledLog, err = models.HandleLaunchLogStatus(launchLog, true, gasUsed, executedAt)
+	} else {
+		result = "failed"
+		handledLog, err = models.HandleLaunchLogStatus(launchLog, false, gasUsed, executedAt)
+	}
+
+	api.SendLogStatusToSubscriber(handledLog, err)
+	logrus.Infof("log %s receipt request finial %s, err: %+v", launchLog.Hash.String, result, err)
+
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 func determineGasPriceForRetryLaunchLog(

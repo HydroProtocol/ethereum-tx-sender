@@ -2,7 +2,10 @@ package utils
 
 import (
 	"encoding/hex"
+	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
+	"math/big"
 )
 
 func Keccak256(data ...[]byte) []byte {
@@ -25,3 +28,22 @@ func DecodeHex(s string) []byte {
 func EncodeHex(b []byte) string {
 	return "0x" + hex.EncodeToString(b)
 }
+
+// Encode encodes b as a hex string with 0x prefix.
+func Encode(b []byte) string {
+	enc := make([]byte, len(b)*2+2)
+	copy(enc, "0x")
+	hex.Encode(enc[2:], b)
+	return string(enc)
+}
+
+
+func DecimalToBigInt(d decimal.Decimal) *big.Int {
+	n := new(big.Int)
+	n, ok := n.SetString(d.String(), 10)
+	if !ok {
+		logrus.Fatalf("decimal to big int failed d: %s", d.String())
+	}
+	return n
+}
+
