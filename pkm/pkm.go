@@ -57,7 +57,6 @@ func (l localPKM) Sign(t *ethrpc.T) (string, error) {
 		t.Value,
 		uint64(t.Gas),
 		t.GasPrice,
-		//make([]byte, 0),
 		utils.Hex2Bytes(t.Data),
 	)
 	fmt.Println(utils.ToJsonString(tx))
