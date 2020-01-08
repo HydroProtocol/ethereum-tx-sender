@@ -62,8 +62,8 @@ func loadRoutes(e *echo.Echo) {
 		return c.String(http.StatusOK, "hello")
 	})
 
-	addRoute(e, "create_log", http.MethodPost, "/logs", &CreateLogReq{}, CreateLog)
-	addRoute(e, "get_log", http.MethodGet, "/logs", &GetLogReq{}, GetLogs)
+	addRoute(e, "create_log", http.MethodPost, "/launch_logs", &CreateLogReq{}, CreateLog)
+	addRoute(e, "get_log", http.MethodGet, "/launch_logs", &GetLogReq{}, GetLogs)
 }
 
 func addRoute(

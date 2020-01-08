@@ -1,0 +1,39 @@
+version: "3"
+volumes:
+  datavolume: {}
+services:
+  db:
+    container_name: pg
+    image: postgres
+    ports:
+      - 127.0.0.1:5432:5432
+    restart: always
+    volumes:
+      - datavolume:/var/lib/postgresql/data
+      - ./backend/db/migrations/0001-init.up.sql:/docker-entrypoint-initdb.d/0001-init.up.sql
+      - ./envs/localhost/seed.sql:/docker-entrypoint-initdb.d/0002-seed.sql
+    logging: &logging_default
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "200m"
+        compress: "true"
+  api:
+    build: ./
+    container_name: ethereum-launcher
+    command: /bin/app
+    ports:
+      - 127.0.0.1:3000:3000
+      - 127.0.0.1:3001:3001
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db/postgres?sslmode=disable
+      - ETHEREUM_NODE_URL=https://ropsten.infura.io/v3/cabc724fb9534d1bb245582a74ccf3e7
+      - MAX_GAS_PRICE_FOR_RETRY=
+      - RETRY_PENDING_SECONDS_THRESHOLD=
+      - RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT=
+      - PRIVATE_KEYS=
+    depends_on:
+      - db
+    restart: always
+    logging:
+      <<: *logging_default
