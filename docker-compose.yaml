@@ -22,8 +22,8 @@ services:
     restart: always
     volumes:
       - datavolume:/var/lib/postgresql/data
-      - ./backend/db/migrations/0001-init.up.sql:/docker-entrypoint-initdb.d/0001-init.up.sql
-      - ./envs/localhost/seed.sql:/docker-entrypoint-initdb.d/0002-seed.sql
+      - ./models/migrations/0001-init.up.sql:/docker-entrypoint-initdb.d/0001-init.up.sql
+#      - ./envs/localhost/seed.sql:/docker-entrypoint-initdb.d/0002-seed.sql
     logging:
       <<: *logging_default
   api:

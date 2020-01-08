@@ -8,11 +8,18 @@ import (
 	"time"
 )
 
-func TestFetcher(t *testing.T){
-	go StartFetcher(context.Background())
-	<-time.After(time.Second * 5)
+func TestFetchAndGet(t *testing.T){
+	price, err := fetchPrice(context.Background())
 
-	price,err := Get()
 	assert.Nil(t, err)
 	spew.Dump(price)
+
+	normalPrice, urgentPrice := GetCurrentGasPrice()
+	spew.Dump(normalPrice, urgentPrice)
+}
+
+func TestStartFetcher(t *testing.T) {
+	ctx,_ := context.WithTimeout(context.Background(), time.Second * 10)
+
+	StartFetcher(ctx)
 }

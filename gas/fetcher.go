@@ -3,103 +3,73 @@ package gas
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
+	"github.com/HydroProtocol/hydro-sdk-backend/utils"
+	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"github.com/shopspring/decimal"
-	"github.com/sirupsen/logrus"
 )
 
 var prices *GasPrices
 
-type EtherGasStationResponse struct {
-	Fast        decimal.Decimal `json:"fast"`
-	Fastest     decimal.Decimal `json:"fastest"`
-	SafeLow     decimal.Decimal `json:"safeLow"`
-	Average     decimal.Decimal `json:"average"`
-	BlockTime   decimal.Decimal `json:"block_time"`
-	BlockNum    decimal.Decimal `json:"blockNum"`
-	Speed       decimal.Decimal `json:"speed"`
-	SafeLowWait decimal.Decimal `json:"safeLowWait"`
-	AvgWait     decimal.Decimal `json:"avgWait"`
-	FastWait    decimal.Decimal `json:"fastWait"`
-	FastestWait decimal.Decimal `json:"fastestWait"`
-}
-
-type GasPrices struct {
-	Proposed decimal.Decimal `json:"proposed"`
-	Low      decimal.Decimal `json:"low"`
-	Average  decimal.Decimal `json:"average"`
-	High     decimal.Decimal `json:"high"`
-}
-
-func Get() (*GasPrices, error) {
+func GetCurrentGasPrice() (decimal.Decimal,decimal.Decimal) {
 	if prices == nil {
-		return nil,errors.New("bad gas")
-	}
-
-	return prices,nil
-}
-
-func GetCurrentGasPrice(isUrgent bool) decimal.Decimal {
-	currentGas, err := Get()
-
-	if err != nil {
 		panic("Can't get gas price, will use default")
 	}
 
-	if isUrgent {
-		// 1.1 times high
-		return currentGas.Proposed.Mul(decimal.NewFromFloat(1.1))
-	}
-
-	return currentGas.Proposed
+	return prices.Proposed, prices.Proposed.Mul(decimal.NewFromFloat(1.1))
 }
 
-var Gwei = decimal.New(1, 9)                // Gwei
-var EtherGasStationUnit = decimal.New(1, 8) // 0.1 Gwei
-var maxGasPrice = decimal.New(100, 9)       // 100 Gwei
-var minGasPrice = decimal.New(1, 9)         // 1 Gwei
-
 func StartFetcher(ctx context.Context) {
-	firstTime := true
-
+	logrus.Infof("gas fetcher started")
+	fetch(ctx)
 	for {
-		if !firstTime {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(10 * time.Second):
-			}
+		select {
+		case <-ctx.Done():
+			logrus.Infof("gas fetcher exit")
+			return
+		case <-time.After(10 * time.Second):
+			fetch(ctx)
 		}
-
-		firstTime = false
-
-		r, _ := http.NewRequest(http.MethodGet, "https://ethgasstation.info/json/ethgasAPI.json", nil)
-		r = r.WithContext(ctx)
-
-		resp, err := http.DefaultClient.Do(r)
-
-		if err != nil {
-			logrus.Errorf("fetch price from ether gas station failed err: %v", err)
-			continue
-		}
-
-		resBytes, err := ioutil.ReadAll(resp.Body)
-
-		if err != nil {
-			logrus.Errorf("read bytes err: %v", err)
-			continue
-		}
-
-		var egsRes EtherGasStationResponse
-		_ = json.Unmarshal(resBytes, &egsRes)
-		prices = getPrices(&egsRes)
-
-		logrus.Infof("new price fetched: %v", string(resBytes))
 	}
+}
+
+func fetch(ctx context.Context) {
+	price, err := fetchPrice(ctx)
+	if err != nil {
+		logrus.Error(err)
+	} else {
+		logrus.Infof("fetch price: %s", utils.ToJsonString(price))
+	}
+}
+
+func fetchPrice(ctx context.Context) (*EtherGasStationResponse, error){
+	r, _ := http.NewRequest(http.MethodGet, "https://ethgasstation.info/json/ethgasAPI.json", nil)
+	r = r.WithContext(ctx)
+
+	resp, err := http.DefaultClient.Do(r)
+
+	if err != nil {
+		return nil, fmt.Errorf("fetch price from ether gas station failed err: %v", err)
+	}
+
+	resBytes, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return nil, fmt.Errorf("read bytes err: %v", err)
+	}
+
+	var egsRes EtherGasStationResponse
+	err = json.Unmarshal(resBytes, &egsRes)
+	if err != nil {
+		return nil, err
+	} else {
+		prices = getPrices(&egsRes)
+	}
+
+	return &egsRes, nil
 }
 
 func getPrices(ethGasStationResp *EtherGasStationResponse) *GasPrices {
@@ -128,3 +98,29 @@ func keepInSafeRange(d decimal.Decimal) decimal.Decimal {
 
 	return d
 }
+
+type EtherGasStationResponse struct {
+	Fast        decimal.Decimal `json:"fast"`
+	Fastest     decimal.Decimal `json:"fastest"`
+	SafeLow     decimal.Decimal `json:"safeLow"`
+	Average     decimal.Decimal `json:"average"`
+	BlockTime   decimal.Decimal `json:"block_time"`
+	BlockNum    decimal.Decimal `json:"blockNum"`
+	Speed       decimal.Decimal `json:"speed"`
+	SafeLowWait decimal.Decimal `json:"safeLowWait"`
+	AvgWait     decimal.Decimal `json:"avgWait"`
+	FastWait    decimal.Decimal `json:"fastWait"`
+	FastestWait decimal.Decimal `json:"fastestWait"`
+}
+
+type GasPrices struct {
+	Proposed decimal.Decimal `json:"proposed"`
+	Low      decimal.Decimal `json:"low"`
+	Average  decimal.Decimal `json:"average"`
+	High     decimal.Decimal `json:"high"`
+}
+
+var Gwei = decimal.New(1, 9)                // Gwei
+var EtherGasStationUnit = decimal.New(1, 8) // 0.1 Gwei
+var maxGasPrice = decimal.New(100, 9)       // 100 Gwei
+var minGasPrice = decimal.New(1, 9)         // 1 Gwei

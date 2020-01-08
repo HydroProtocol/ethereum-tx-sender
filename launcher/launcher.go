@@ -53,8 +53,7 @@ func (l*launcher)StartSendLoop(ctx context.Context) {
 
 		logrus.Infof("%d created log to be send", len(launchLogs))
 
-		normalGasPrice := gas.GetCurrentGasPrice(false)
-		urgentGasPrice := gas.GetCurrentGasPrice(true)
+		normalGasPrice,urgentGasPrice := gas.GetCurrentGasPrice()
 
 		for i := 0; i < len(launchLogs); i++ {
 			launchLog := launchLogs[i]
@@ -354,7 +353,11 @@ func determineGasPriceForRetryLaunchLog(
 ) decimal.Decimal {
 	treatAsUrgent := isBlockingUrgentLog || launchLog.IsUrgent
 
-	suggestGasPrice := gas.GetCurrentGasPrice(treatAsUrgent)
+	normalPrice, urgentPrice := gas.GetCurrentGasPrice()
+	suggestGasPrice := urgentPrice
+	if treatAsUrgent {
+		suggestGasPrice = normalPrice
+	}
 
 	minRetryGasPrice := launchLog.GasPrice.Mul(decimal.New(115, -2))
 	gasPrice := decimal.Max(suggestGasPrice, minRetryGasPrice)

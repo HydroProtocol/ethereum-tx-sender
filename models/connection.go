@@ -10,15 +10,16 @@ import (
 
 var DB *gorm.DB
 
-func ConnectDB(dbUrl string) {
+func ConnectDB(dbUrl string) error {
 	if dbUrl == "" {
-		logrus.Fatal("empty DB url")
+		return fmt.Errorf("empty DB url")
 	}
 
 	_url, err := url.Parse(dbUrl)
 
 	if err != nil {
-		logrus.Fatalf("parse DB url failed %s", dbUrl)
+		logrus.Errorf("parse DB url failed %s", dbUrl)
+		return err
 	}
 
 	host := _url.Hostname()
@@ -41,9 +42,12 @@ func ConnectDB(dbUrl string) {
 	_db, err := gorm.Open("postgres", args)
 
 	if err != nil {
-		logrus.Fatalf("failed to connect database args: %s err: %+v", args, err)
+		logrus.Errorf("failed to connect database args: %s err: %+v", args, err)
+		return err
 	}
 
 	DB = _db
 	DB.LogMode(true)
+
+	return nil
 }

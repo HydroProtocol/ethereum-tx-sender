@@ -36,7 +36,12 @@ func createLog(msg *pb.CreateMessage) (*pb.CreateReply, error) {
 	var gasPrice decimal.Decimal
 
 	if msg.GasPrice == "" {
-		gasPrice = gas.GetCurrentGasPrice(msg.IsUrgent)
+		normalPrice,urgentPrice := gas.GetCurrentGasPrice()
+		if msg.IsUrgent {
+			gasPrice = urgentPrice
+		} else {
+			gasPrice = normalPrice
+		}
 	} else {
 		gasPrice, err = decimal.NewFromString(msg.GasPrice)
 		if err != nil {

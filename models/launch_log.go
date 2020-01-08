@@ -76,3 +76,12 @@ func (*launchLogDao)FindLogByHash(hash string) *LaunchLog {
 	return &launchLog
 }
 
+func (*launchLogDao)GetAddressMaxNonce(address string) int64 {
+	var maxNonceInDB sql.NullInt64
+	DB.Raw(`select max(nonce) from launch_logs where "from" = ?`, address).Scan(&maxNonceInDB)
+
+	if maxNonceInDB.Valid {
+		return maxNonceInDB.Int64
+	}
+  return 0
+}

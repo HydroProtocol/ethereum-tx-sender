@@ -12,7 +12,7 @@ import (
 )
 
 func TestRetryAndOriginalTxSuccess(t *testing.T) {
-	ConnectDB("postgres://david:@localhost:5432/launcher")
+	ConnectDB(LocalDBUrl)
 	DB.Unscoped().Delete(LaunchLog{}, "'1' = ?", "1")
 	DB.Model(&LaunchLog{}).Create(&LaunchLog{
 		From:     "0x0",

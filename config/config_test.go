@@ -13,6 +13,7 @@ func TestInitConfig(t *testing.T) {
 	_ = os.Setenv("MAX_GAS_PRICE_FOR_RETRY", "50")
 	_ = os.Setenv("RETRY_PENDING_SECONDS_THRESHOLD", "10")
 	_ = os.Setenv("RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT", "5")
+	_ = os.Setenv("PRIVATE_KEYS", "private key")
 
 	launcherConfig,err := InitConfig()
 	assert.Nil(t, err)

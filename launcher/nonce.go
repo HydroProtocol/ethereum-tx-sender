@@ -1,7 +1,6 @@
 package launcher
 
 import (
-	"database/sql"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"github.com/sirupsen/logrus"
 )
@@ -35,24 +34,19 @@ func (l*launcher)loadLastNonce(from string) int64 {
 	n, err := l.ethrpcClient.EthGetTransactionCount(from, "pending")
 
 	if err != nil {
-		logrus.Errorf("%s load transcations count error: %+v", from, err)
+		logrus.Errorf("%s load transactions count error: %+v", from, err)
 	}
 
 	nonce := int64(n) - 1
 
-	var maxNonceInDB sql.NullInt64
-	models.DB.Raw(`select max(nonce) from launch_logs where "from" = ?`, from).Scan(&maxNonceInDB)
-
-	if !maxNonceInDB.Valid {
-		return nonce
-	}
+	maxNonceInDB := models.LaunchLogDao.GetAddressMaxNonce(from)
 
 	var res int64
 
-	if nonce > maxNonceInDB.Int64 {
+	if nonce > maxNonceInDB {
 		res = nonce
 	} else {
-		res = maxNonceInDB.Int64
+		res = maxNonceInDB
 	}
 
 	logrus.Infof("load last nonce for %s %d", from, res)

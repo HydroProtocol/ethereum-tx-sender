@@ -23,9 +23,6 @@ create table launch_logs
     nonce       bigint
 );
 
-alter table launch_logs
-    owner to launcher;
-
 create index idx_launch_logs_deleted_at
     on launch_logs (deleted_at);
 
