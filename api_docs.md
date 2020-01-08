@@ -1,6 +1,6 @@
 Ethereum launcher API document
 
-###send_transaction
+### send_transaction
 
 Example
     
@@ -54,7 +54,7 @@ Response Data
 | ------------- | ------------------------ | ------ | ---------- |
 | **hash**      | hash of then transaction | string | `0x7572578cc4cf3e7c897811d48b65e01e2a5544a325acfdea831887d8a1a5703b` |
 
-###query_transaction
+### query_transaction
 
 Example
     

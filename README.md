@@ -7,7 +7,7 @@ Which can not avoid to deal with some tedious problems. For example, what to do 
   
   The purpose of this system is to help developers solve these problems and allow developers to focus more on business logic.
 
-##Features:
+## Features:
 
 - Accept the encapsulated Ethereum transaction request and send it to Ethereum, and synchronize the transaction status.
 - Query the status of sent transactions.
@@ -88,7 +88,7 @@ ethereum-launcher provide two interface, ``send_transaction`` and ``query_transa
            "data":"",
         }
 
-##Configurations
+## Configurations
 You can modify the following environment variables in file `docker-compose.yaml`
 
    ``DATABASE_URL`` - database to store launch logs   
@@ -98,13 +98,13 @@ You can modify the following environment variables in file `docker-compose.yaml`
    ``RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT`` - the interval time to speed up the urgent pending transaction  
    ``PRIVATE_KEYS`` - to sign the transactions  
 
-##Notice
+## Notice
 - For one address, it is better not to use the launcher to send transactions and send transactions elsewhere, as this will cause problems with nonce
 - It is best for developers to implement a set of pkm interfaces themselves, of course, a local simplified version of pmk is provided in the project
 
-##What next
+## What next
 - A management background
 - sdk for api
 
-##License
+## License
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details
