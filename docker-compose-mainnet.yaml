@@ -10,8 +10,7 @@ services:
     restart: always
     volumes:
       - datavolume:/var/lib/postgresql/data
-      - ./backend/db/migrations/0001-init.up.sql:/docker-entrypoint-initdb.d/0001-init.up.sql
-      - ./envs/localhost/seed.sql:/docker-entrypoint-initdb.d/0002-seed.sql
+      - ./models/migrations/0001-init.up.sql:/docker-entrypoint-initdb.d/0001-init.up.sql
     logging: &logging_default
       driver: "json-file"
       options:
@@ -21,6 +20,7 @@ services:
   ethereum-launcher:
     build: ./
     container_name: ethereum-launcher
+    image: hydroprotocolio/ethereum-launcher:latest
     command: /bin/app
     ports:
       - 127.0.0.1:3000:3000
@@ -28,9 +28,9 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db/postgres?sslmode=disable
       - ETHEREUM_NODE_URL=https://mainnet.infura.io/v3/cabc724fb9534d1bb245582a74ccf3e7
-      - MAX_GAS_PRICE_FOR_RETRY=
-      - RETRY_PENDING_SECONDS_THRESHOLD=
-      - RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT=
+      - MAX_GAS_PRICE_FOR_RETRY=50000000000
+      - RETRY_PENDING_SECONDS_THRESHOLD=90
+      - RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT=45
       - PRIVATE_KEYS=
     depends_on:
       - db

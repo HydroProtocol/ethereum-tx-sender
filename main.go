@@ -20,7 +20,7 @@ func main() {
 }
 
 func run() int {
-	//logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetLevel(logrus.InfoLevel)
 
 	configs, err := config.InitConfig()
 	if err != nil {

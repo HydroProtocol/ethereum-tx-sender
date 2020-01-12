@@ -23,7 +23,7 @@ const user3 = "0x3eb06f432ae8f518a957852aa44776c234b4a84a"
 
 func TestNewWatcher(t *testing.T) {
 	// docker-compose -f docker-db-eth-node.yaml down -v
-	// docker-compose -f docker-db-eth-node.yaml up
+	// docker-compose -f docker-compose-localhost-source.yaml up db ethereum-node
 	api.InitSubscribeHub()
 	ethrpcClient := ethrpc.New("http://localhost:8545")
 	_ = models.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
