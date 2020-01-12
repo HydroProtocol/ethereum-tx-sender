@@ -7,6 +7,7 @@ import (
 	"git.ddex.io/infrastructure/ethereum-launcher/launcher"
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
 	"git.ddex.io/infrastructure/ethereum-launcher/watcher"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/onrik/ethrpc"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -21,7 +22,10 @@ func main() {
 func run() int {
 	//logrus.SetLevel(logrus.DebugLevel)
 
-	configs, _ := config.InitConfig()
+	configs, err := config.InitConfig()
+	if err != nil {
+		panic(err)
+	}
 	ctx, stop := context.WithCancel(context.Background())
 	logrus.Infof("config is: %+v", configs)
 
@@ -34,6 +38,7 @@ func run() int {
 	watcherClient := watcher.NewWatcher(ctx, configs.EthereumNodeUrl, ethrpcClient)
 	go watcherClient.StartWatcher()
 
+	api.InitSubscribeHub()
 	go api.StartGRPCServer(ctx)
 	go api.StartHTTPServer(ctx)
 	launcher.StartLauncher(ctx, ethrpcClient)

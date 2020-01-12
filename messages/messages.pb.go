@@ -101,7 +101,7 @@ type CreateMessage struct {
 	GasPrice             string   `protobuf:"bytes,5,opt,name=gas_price,json=gasPrice,proto3" json:"gas_price,omitempty"`
 	GasLimit             uint32   `protobuf:"varint,6,opt,name=gas_limit,json=gasLimit,proto3" json:"gas_limit,omitempty"`
 	ItemType             string   `protobuf:"bytes,7,opt,name=item_type,json=itemType,proto3" json:"item_type,omitempty"`
-	ItemId               string   `protobuf:"bytes,8,opt,name=item_id,json=itemId,proto3" json:"item_id,omitempty"`
+		ItemId               string   `protobuf:"bytes,8,opt,name=item_id,json=itemId,proto3" json:"item_id,omitempty"`
 	IsUrgent             bool     `protobuf:"varint,9,opt,name=isUrgent,proto3" json:"isUrgent,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

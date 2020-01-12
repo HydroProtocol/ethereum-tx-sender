@@ -38,6 +38,10 @@ func init(){
 	LaunchLogDao = &launchLogDao{}
 }
 
+func (*launchLogDao)InsertLaunchLog(launchLog *LaunchLog) error {
+	return DB.Create(launchLog).Error
+}
+
 func (*launchLogDao)InsertRetryLaunchLog(tx *gorm.DB, launchLog *LaunchLog) error {
 	newLog := &LaunchLog{
 		ItemType: launchLog.ItemType,

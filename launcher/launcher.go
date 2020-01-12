@@ -160,8 +160,6 @@ func (l*launcher)StartRetryLoop(ctx context.Context) {
 				continue
 			}
 
-			isNewLaunchLogCreated := false
-
 			err = models.ExecuteInRepeatableReadTransaction(func(tx *gorm.DB) (er error) {
 				// optimistic lock the retried launchlog g
 				var reloadedLog models.LaunchLog
@@ -197,8 +195,6 @@ func (l*launcher)StartRetryLoop(ctx context.Context) {
 				if er = models.LaunchLogDao.InsertRetryLaunchLog(tx, launchLog); er != nil {
 					return er
 				}
-
-				isNewLaunchLogCreated = true
 
 				return nil
 			})
@@ -337,6 +333,7 @@ func (l*launcher)tryLoadLaunchLogReceipt(launchLog *models.LaunchLog) bool {
 	}
 
 	api.SendLogStatusToSubscriber(handledLog, err)
+	logrus.Debugf("handledLog is %+v", handledLog)
 	logrus.Infof("log %s receipt request finial %s, err: %+v", launchLog.Hash.String, result, err)
 
 	if err != nil {

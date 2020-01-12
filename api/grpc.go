@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc"
 	"io"
 	"net"
-	"sync"
 )
 //go:generate protoc -I.  --go_out=plugins=grpc:. ./messages/messages.proto
 
@@ -32,42 +31,6 @@ func (*server) Get(ctx context.Context, msg *pb.GetMessage) (*pb.GetReply, error
 // the launcher has it's own watcher, no need to notify
 func (*server) Notify(ctx context.Context, msg *pb.NotifyMessage) (*pb.NotifyReply, error) {
 	return nil, fmt.Errorf("no implement")
-}
-
-func getSubscribeHubKey(itemType, itemId string) string {
-	return fmt.Sprintf("Type:%s-ID:%s", itemType, itemId)
-}
-
-func SendLogStatusToSubscriber(log *models.LaunchLog, err error) {
-	logrus.Infof("SendLogStatusToSubscriber for log %d", log.ID)
-
-	key := getSubscribeHubKey(log.ItemType, log.ItemID)
-
-	data, ok := subscribeHub.data[key]
-
-	if !ok || data == nil {
-		logrus.Infof("no subscriber handlers found for log %d", log.ID)
-		return
-	}
-
-	for s, _ := range data {
-		switch v := s.(type) {
-		case pb.Launcher_SubscribeServer:
-			logrus.Infof("SendLogStatusToSubscriber for log %d, handler: pb.Launcher_SubscribeServer", log.ID)
-			_ = v.Send(&pb.SubscribeReply{
-				Status:   pb.LaunchLogStatus(pb.LaunchLogStatus_value[log.Status]),
-				Hash:     log.Hash.String,
-				ItemId:   log.ItemID,
-				ItemType: log.ItemType,
-				ErrMsg:   log.ErrMsg,
-			})
-		case *CreateCallbackFunc:
-			logrus.Infof("SendLogStatusToSubscriber for log %d, handler: *CreateCallbackFunc", log.ID)
-			(*v)(log, err)
-		default:
-			logrus.Errorf("SendLogStatusToSubscriber for log %d, handler: unknown, %+v, %+v", log.ID, s, v)
-		}
-	}
 }
 
 func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
@@ -94,46 +57,8 @@ func (*server) Subscribe(subscribeServer pb.Launcher_SubscribeServer) error {
 	}
 }
 
-type SubscribeHub struct {
-	m    *sync.Mutex
-	data map[string]map[interface{}]bool
-}
-
-func (sb *SubscribeHub) Register(key string, handler interface{}) {
-	sb.m.Lock()
-	defer sb.m.Unlock()
-
-	if _, ok := sb.data[key]; !ok {
-		sb.data[key] = make(map[interface{}]bool)
-	}
-
-	sb.data[key][handler] = true
-}
-
-func (sb *SubscribeHub) Remove(key string, handler interface{}) {
-	sb.m.Lock()
-	defer sb.m.Unlock()
-
-	if _, ok := sb.data[key]; !ok {
-		return
-	}
-
-	delete(sb.data[key], handler)
-
-	if len(sb.data[key]) == 0 {
-		delete(sb.data, key)
-	}
-}
-
-var subscribeHub *SubscribeHub
-
 func StartGRPCServer(ctx context.Context) {
-	subscribeHub = &SubscribeHub{
-		m:    &sync.Mutex{},
-		data: make(map[string]map[interface{}]bool),
-	}
-
-	lis, err := net.Listen("tcp", ":3000")
+	lis, err := net.Listen("tcp", ":3001")
 
 	if err != nil {
 		logrus.Fatalf("failed to listen: %v", err)
@@ -142,7 +67,7 @@ func StartGRPCServer(ctx context.Context) {
 	s := grpc.NewServer()
 	pb.RegisterLauncherServer(s, &server{})
 
-	logrus.Info("gRPC endpoint is listening on 0.0.0.0:3000\n")
+	logrus.Info("gRPC endpoint is listening on 0.0.0.0:3001\n")
 
 	if err := s.Serve(lis); err != nil {
 		logrus.Fatalf("failed to serve: %v", err)

@@ -8,7 +8,6 @@ import (
 	"github.com/HydroProtocol/hydro-sdk-backend/utils"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"reflect"
 	"runtime"
@@ -16,8 +15,6 @@ import (
 )
 
 func StartHTTPServer(ctx context.Context) {
-	logrus.SetLevel(logrus.DebugLevel)
-
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -28,7 +25,7 @@ func StartHTTPServer(ctx context.Context) {
 	loadRoutes(e)
 
 	s := &http.Server{
-		Addr:         fmt.Sprintf(":%s", "3001"),
+		Addr:         fmt.Sprintf(":%s", "3000"),
 		ReadTimeout:  20 * time.Second,
 		WriteTimeout: 20 * time.Second,
 	}
@@ -77,8 +74,7 @@ func addRoute(
 }
 
 func bindAndValidParams(c echo.Context, params Param) (err error) {
-	json.NewDecoder(c.Request().Body).Decode(params)
-	return nil
+	return json.NewDecoder(c.Request().Body).Decode(params)
 }
 
 func commonHandler(apiKey string, paramSchema Param, fn func(Param) (interface{}, error)) echo.HandlerFunc {

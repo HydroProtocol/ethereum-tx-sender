@@ -9,14 +9,19 @@ import (
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 )
 
 var prices *GasPrices
+var fetchPriceMutex sync.Mutex
 
 func GetCurrentGasPrice() (decimal.Decimal,decimal.Decimal) {
 	if prices == nil {
-		panic("Can't get gas price, will use default")
+		fetch(context.Background())
+		if prices == nil {
+			panic("Can't get gas price, will use default")
+		}
 	}
 
 	return prices.Proposed, prices.Proposed.Mul(decimal.NewFromFloat(1.1))
@@ -37,6 +42,8 @@ func StartFetcher(ctx context.Context) {
 }
 
 func fetch(ctx context.Context) {
+	fetchPriceMutex.Lock()
+	defer fetchPriceMutex.Unlock()
 	price, err := fetchPrice(ctx)
 	if err != nil {
 		logrus.Error(err)

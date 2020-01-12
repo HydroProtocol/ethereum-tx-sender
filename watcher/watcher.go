@@ -23,7 +23,6 @@ type Watcher struct {
 }
 
 func NewWatcher(ctx context.Context, ethNodeUrl string, ethrpcClient *ethrpc.EthRPC) *Watcher {
-
 	lastSavedBlockNumber, err := models.BlockNumberDao.GetCurrentBlockNumber()
 	if err != nil {
 		panic(err)
@@ -76,13 +75,16 @@ func (w *Watcher) StartWatcher() {
 			handledLog, err = models.HandleLaunchLogStatus(log, false, gasUsed, executedAt)
 		}
 
+		logrus.Debugf("handledLog is %+v", handledLog)
 		api.SendLogStatusToSubscriber(handledLog, err)
 
 		logrus.Infof("tx %s err: %+v result: %s", txAndReceipt.Receipt.GetTxHash(), err, result)
 	}))
 
 	for {
-		err := nightWatch.RunTillExitFromBlock(uint64(getHighestSyncedBlock()))
+		highestSyncedBlock := uint64(getHighestSyncedBlock())
+		logrus.Infof("begin watcher from block: %d", highestSyncedBlock)
+		err := nightWatch.RunTillExitFromBlock(highestSyncedBlock)
 
 		if err != nil {
 			logrus.Errorf("watcher error: %+v", err)

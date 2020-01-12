@@ -19,7 +19,10 @@ func TestFetchAndGet(t *testing.T){
 }
 
 func TestStartFetcher(t *testing.T) {
-	ctx,_ := context.WithTimeout(context.Background(), time.Second * 10)
+	ctx,cancel := context.WithTimeout(context.Background(), time.Second * 10)
 
-	StartFetcher(ctx)
+	go StartFetcher(ctx)
+	<- time.After(time.Second * 5)
+	cancel()
+	spew.Dump(GetCurrentGasPrice())
 }

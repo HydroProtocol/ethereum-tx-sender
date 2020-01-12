@@ -18,7 +18,7 @@ services:
         max-file: "5"
         max-size: "200m"
         compress: "true"
-  api:
+  ethereum-launcher:
     build: ./
     container_name: ethereum-launcher
     command: /bin/app
@@ -34,7 +34,6 @@ services:
       - PRIVATE_KEYS=
     depends_on:
       - db
-      - ethereum-node
     restart: always
     logging:
       <<: *logging_default

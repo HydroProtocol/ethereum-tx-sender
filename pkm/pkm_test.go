@@ -17,7 +17,7 @@ func TestLocalPKM_Sign(t *testing.T) {
 		GasPrice: big.NewInt(9000000000),
 		Value:    big.NewInt(10000000000000000),
 		Data:     "0x",
-		Nonce:    4,
+		Nonce:    5,
 	}
 
 	raw,_:= LocalPKM.Sign(&transaction)

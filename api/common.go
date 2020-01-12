@@ -10,10 +10,57 @@ import (
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // notify the send loop to start
 var NewRequestChannel = make(chan int, 100)
+
+// launcher and watcher will notice the change of tx status to api by using subscribeHub
+var subscribeHub *SubscribeHub
+
+func InitSubscribeHub() {
+	subscribeHub = &SubscribeHub{
+		m:    &sync.Mutex{},
+		data: make(map[string]map[interface{}]bool),
+	}
+}
+
+func SendLogStatusToSubscriber(log *models.LaunchLog, err error) {
+	logrus.Infof("SendLogStatusToSubscriber for log %d", log.ID)
+
+	key := getSubscribeHubKey(log.ItemType, log.ItemID)
+
+	data, ok := subscribeHub.data[key]
+
+	if !ok || data == nil {
+		logrus.Infof("no subscriber handlers found for log %d", log.ID)
+		return
+	}
+
+	for s, _ := range data {
+		switch v := s.(type) {
+		case pb.Launcher_SubscribeServer:
+			logrus.Infof("SendLogStatusToSubscriber for log %d, handler: pb.Launcher_SubscribeServer", log.ID)
+			_ = v.Send(&pb.SubscribeReply{
+				Status:   pb.LaunchLogStatus(pb.LaunchLogStatus_value[log.Status]),
+				Hash:     log.Hash.String,
+				ItemId:   log.ItemID,
+				ItemType: log.ItemType,
+				ErrMsg:   log.ErrMsg,
+			})
+		case *CreateCallbackFunc:
+			logrus.Infof("SendLogStatusToSubscriber for log %d, handler: *CreateCallbackFunc", log.ID)
+			(*v)(log, err)
+		default:
+			logrus.Errorf("SendLogStatusToSubscriber for log %d, handler: unknown, %+v, %+v", log.ID, s, v)
+		}
+	}
+}
+
+func getSubscribeHubKey(itemType, itemId string) string {
+	return fmt.Sprintf("Type:%s-ID:%s", itemType, itemId)
+}
 
 func createLog(msg *pb.CreateMessage) (*pb.CreateReply, error) {
 	var err error
@@ -162,4 +209,36 @@ func getLog(msg *pb.GetMessage) (*pb.GetReply, error) {
 		Status: pb.RequestStatus_REQUEST_SUCCESSFUL,
 		Data:   dataLogs,
 	}, nil
+}
+
+
+type SubscribeHub struct {
+	m    *sync.Mutex
+	data map[string]map[interface{}]bool
+}
+
+func (sb *SubscribeHub) Register(key string, handler interface{}) {
+	sb.m.Lock()
+	defer sb.m.Unlock()
+
+	if _, ok := sb.data[key]; !ok {
+		sb.data[key] = make(map[interface{}]bool)
+	}
+
+	sb.data[key][handler] = true
+}
+
+func (sb *SubscribeHub) Remove(key string, handler interface{}) {
+	sb.m.Lock()
+	defer sb.m.Unlock()
+
+	if _, ok := sb.data[key]; !ok {
+		return
+	}
+
+	delete(sb.data[key], handler)
+
+	if len(sb.data[key]) == 0 {
+		delete(sb.data, key)
+	}
 }
