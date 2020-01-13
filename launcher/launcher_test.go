@@ -17,8 +17,6 @@ import (
 	"time"
 )
 
-const user2 = "0x31ebd457b999bf99759602f5ece5aa5033cb56b3"
-
 func TestStartLauncher(t *testing.T) {
 	// docker-compose -f docker-db-eth-node.yaml down -v
 	// docker-compose -f docker-compose-localhost-source.yaml up db ethereum-node
