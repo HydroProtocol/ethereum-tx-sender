@@ -15,7 +15,8 @@ func TestConnectDBFail(t *testing.T) {
 }
 
 func TestConnectDB(t *testing.T) {
-	// docker-compose -f docker-compose.yaml up db
+	// docker-compose -f docker-db-eth-node.yaml down -v
+	// docker-compose -f docker-compose-localhost-source.yaml up db ethereum-node
 	err := ConnectDB(LocalDBUrl)
 	assert.Nil(t, err)
 	var ret struct{

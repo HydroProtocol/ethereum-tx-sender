@@ -6,7 +6,8 @@ import (
 )
 
 func TestBlockNumberDao_GetCurrentBlockNumberAndIncreaseBlockNumber(t *testing.T) {
-	// docker-compose -f docker-compose.yaml up db
+	// docker-compose -f docker-db-eth-node.yaml down -v
+	// docker-compose -f docker-compose-localhost-source.yaml up db ethereum-node
 	_ = ConnectDB(LocalDBUrl)
 	blockNumber, err := BlockNumberDao.GetCurrentBlockNumber()
   assert.EqualValues(t, 1, blockNumber)

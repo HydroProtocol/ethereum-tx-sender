@@ -50,7 +50,7 @@ If you don't already have them installed, you can follow [this link](https://doc
 
 ### Send transaction by ethereum-launcher
 
-ethereum-launcher provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](./api_docs.md).
+ethereum-launcher provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](docs/api_docs.md).
 
 1.   **send a transaction**
 
