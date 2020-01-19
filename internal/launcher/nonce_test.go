@@ -1,7 +1,7 @@
 package launcher
 
 import (
-	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	models2 "git.ddex.io/infrastructure/ethereum-launcher/internal/models"
 	"github.com/onrik/ethrpc"
 	"github.com/stretchr/testify/assert"
 	"sync"
@@ -13,7 +13,7 @@ const user2 = "0x31ebd457b999bf99759602f5ece5aa5033cb56b3"
 const user3 = "0x3eb06f432ae8f518a957852aa44776c234b4a84a"
 
 func TestLoadLastNonce(t *testing.T) {
-	_ = models.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	_ = models2.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
 	tLancher := newTestLauncher()
 
 	nonce := tLancher.loadLastNonce(user2)
@@ -21,7 +21,7 @@ func TestLoadLastNonce(t *testing.T) {
 }
 
 func TestGetNextNonce(t *testing.T) {
-	_ = models.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	_ = models2.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
 	tLancher := newTestLauncher()
 
 	currentNonce := tLancher.getNextNonce(user2)
@@ -29,7 +29,7 @@ func TestGetNextNonce(t *testing.T) {
 }
 
 func TestIncreaseNextNonce(t *testing.T) {
-	_ = models.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	_ = models2.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
 	tLancher := newTestLauncher()
 
 	nonce := tLancher.getNextNonce(user2)
@@ -41,7 +41,7 @@ func TestIncreaseNextNonce(t *testing.T) {
 }
 
 func TestDeleteCachedNonce(t *testing.T) {
-	_ = models.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	_ = models2.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
 	tLancher := newTestLauncher()
 
 	nonce := tLancher.getNextNonce(user2)
@@ -57,7 +57,7 @@ func TestDeleteCachedNonce(t *testing.T) {
 }
 
 func TestConcurrency(t *testing.T) {
-	_ = models.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	_ = models2.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
 	tLancher := newTestLauncher()
 
 	nonce := tLancher.getNextNonce(user2)
@@ -72,7 +72,7 @@ func TestConcurrency(t *testing.T) {
 	assert.EqualValues(t, 24, currentNonce)
 }
 
-func newTestLauncher() *launcher{
+func newTestLauncher() *launcher {
 	ethrpcClient := ethrpc.New("http://localhost:8545")
 	tLauncher := launcher{
 			ethrpcClient:ethrpcClient,

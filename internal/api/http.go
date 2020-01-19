@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/messages"
 	"github.com/HydroProtocol/hydro-sdk-backend/utils"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -64,10 +64,10 @@ func loadRoutes(e *echo.Echo) {
 }
 
 func addRoute(
-		e *echo.Echo, apiKey, method, url string,
-		param Param,
-		handler func(p Param) (interface{}, error),
-		middleWares ...echo.MiddlewareFunc) {
+	e *echo.Echo, apiKey, method, url string,
+	param Param,
+	handler func(p Param) (interface{}, error),
+	middleWares ...echo.MiddlewareFunc) {
 
 	routeHandlerFunc := commonHandler(apiKey, param, handler)
 	e.Add(method, url, routeHandlerFunc, middleWares...)
@@ -102,7 +102,7 @@ func commonHandler(apiKey string, paramSchema Param, fn func(Param) (interface{}
 			}
 
 			cost := float64(time.Since(startTime) / 1000000)
-			utils.Infof("######[%s] [%.0f] [%s]######request[%s]######response[%s]######err[%v]", apiKey, cost, status, utils.ToJsonString(req), returnContent, err)
+			utils.Infof("apiKey: %s, cost: %.0f, status: %s, request: %s, response: %s, err: %v", apiKey, cost, status, utils.ToJsonString(req), returnContent, err)
 		}()
 
 		if paramSchema != nil {
@@ -128,9 +128,9 @@ func commonHandler(apiKey string, paramSchema Param, fn func(Param) (interface{}
 				})
 			} else {
 				returnContent = utils.ToJsonString(BaseResp{
-					Status:   -1,
-					Desc:     err.Error(),
-					Data:     resp,
+					Status: -1,
+					Desc:   err.Error(),
+					Data:   resp,
 				})
 			}
 		}
@@ -145,9 +145,9 @@ type (
 	}
 
 	BaseResp struct {
-		Status   int               `json:"status"`
-		Desc     interface{}       `json:"desc"`
-		Data     interface{}       `json:"data,omitempty"`
+		Status int         `json:"status"`
+		Desc   interface{} `json:"desc"`
+		Data   interface{} `json:"data,omitempty"`
 	}
 
 	CreateLogReq struct {
@@ -180,4 +180,3 @@ type Param interface {
 	GetTrace() string
 	SetTrace(address string)
 }
-

@@ -17,7 +17,7 @@ services:
         max-size: "200m"
         compress: "true"
   ethereum-launcher:
-    build: ./
+    build: ..
     container_name: ethereum-launcher
     image: hydroprotocolio/ethereum-launcher:latest
     command: /bin/app

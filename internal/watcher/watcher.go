@@ -3,8 +3,8 @@ package watcher
 import (
 	"context"
 	"fmt"
-	"git.ddex.io/infrastructure/ethereum-launcher/api"
-	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/api"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/models"
 	"github.com/HydroProtocol/nights-watch"
 	"github.com/HydroProtocol/nights-watch/plugin"
 	"github.com/HydroProtocol/nights-watch/structs"

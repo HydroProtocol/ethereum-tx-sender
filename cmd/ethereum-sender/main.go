@@ -1,12 +1,13 @@
-package cmd
+package main
 
 import (
 	"context"
-	"git.ddex.io/infrastructure/ethereum-launcher/api"
-	"git.ddex.io/infrastructure/ethereum-launcher/config"
-	"git.ddex.io/infrastructure/ethereum-launcher/launcher"
-	"git.ddex.io/infrastructure/ethereum-launcher/models"
-	"git.ddex.io/infrastructure/ethereum-launcher/watcher"
+	"fmt"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/api"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/config"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/launcher"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/models"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/watcher"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/onrik/ethrpc"
 	"github.com/sirupsen/logrus"
@@ -24,8 +25,11 @@ func run() int {
 
 	configs, err := config.InitConfig()
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		fmt.Println("for details see https://github.com/HydroProtocol/ethereum-sender/blob/master/docs/envs.md")
+		os.Exit(0)
 	}
+
 	ctx, stop := context.WithCancel(context.Background())
 	logrus.Infof("config is: %+v", configs)
 

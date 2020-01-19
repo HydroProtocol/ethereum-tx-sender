@@ -25,7 +25,7 @@ services:
     logging:
       <<: *logging_default
   ethereum-launcher:
-    build: ./
+    build: ..
     container_name: ethereum-launcher
     image: hydroprotocolio/ethereum-launcher:latest
     command: /bin/app
@@ -33,12 +33,12 @@ services:
       - 127.0.0.1:3000:3000
       - 127.0.0.1:3001:3001
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres?sslmode=disable
+      - DATABASE_URL=postgres://postgres:postgres@db/postgres?sslmode=disable
       - ETHEREUM_NODE_URL=http://ethereum-node:8545
-      - MAX_GAS_PRICE_FOR_RETRY=50000000000
-      - RETRY_PENDING_SECONDS_THRESHOLD=90
-      - RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT=45
-      - PRIVATE_KEYS=b7a0c9d2786fc4dd080ea5d619d36771aeb0c8c26c290afd3451b92ba2b7bc2c,1c6a05d6d52954b74407a62f000450d0a748d26a7cc3477cd7f8d7c41d4992ce
+      - MAX_GAS_PRICE_FOR_RETRY=
+      - RETRY_PENDING_SECONDS_THRESHOLD=
+      - RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT=
+      - PRIVATE_KEYS=
     depends_on:
       - db
       - ethereum-node

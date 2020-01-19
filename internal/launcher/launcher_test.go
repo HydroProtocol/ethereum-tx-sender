@@ -3,10 +3,10 @@ package launcher
 import (
 	"context"
 	"database/sql"
-	"git.ddex.io/infrastructure/ethereum-launcher/api"
-	"git.ddex.io/infrastructure/ethereum-launcher/config"
-	"git.ddex.io/infrastructure/ethereum-launcher/messages"
-	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/api"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/config"
+	messages2 "git.ddex.io/infrastructure/ethereum-launcher/internal/messages"
+	models2 "git.ddex.io/infrastructure/ethereum-launcher/internal/models"
 	"github.com/jinzhu/gorm"
 	"github.com/onrik/ethrpc"
 	uuid "github.com/satori/go.uuid"
@@ -31,15 +31,15 @@ func TestStartLauncher(t *testing.T) {
 	config.InitConfig()
 	api.InitSubscribeHub()
 	ethrpcClient := ethrpc.New(config.Config.EthereumNodeUrl)
-	_ = models.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
-	log := &models.LaunchLog{
+	_ = models2.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	log := &models2.LaunchLog{
 		From:       "0x31ebd457b999bf99759602f5ece5aa5033cb56b3",
 		To:         "0x3eb06f432ae8f518a957852aa44776c234b4a84a",
 		Value:      decimal.New(1, 18),
 		GasLimit:   100000,
 		GasUsed:    0,
 		ExecutedAt: 0,
-		Status:     messages.LaunchLogStatus_CREATED.String(),
+		Status:     messages2.LaunchLogStatus_CREATED.String(),
 		GasPrice:   decimal.New(9, 9),
 		Data:       nil,
 		ItemType:   "test",
@@ -55,7 +55,7 @@ func TestStartLauncher(t *testing.T) {
 			Valid: true,
 		},
 	}
-	err := models.LaunchLogDao.InsertLaunchLog(log)
+	err := models2.LaunchLogDao.InsertLaunchLog(log)
 	assert.Nil(t,err)
 
 	balanceUser2, _:= ethrpcClient.EthGetBalance(user2, "latest")
@@ -79,10 +79,10 @@ func TestPickLaunchLogsPendingTooLongWithNoUrgent(t *testing.T) {
 
 	config.InitConfig()
 
-	var logs []*models.LaunchLog
+	var logs []*models2.LaunchLog
 	for i := 0; i <= 10; i++ {
 		// -100, -85, -70, ..., 50
-		log := &models.LaunchLog{
+		log := &models2.LaunchLog{
 			Model: gorm.Model{ID: uint(i), CreatedAt: time.Now().Add(-100 * time.Second).Add(time.Duration(i*15) * time.Second)},
 			Nonce: sql.NullInt64{Valid: true, Int64: int64(i)},
 		}
@@ -105,10 +105,10 @@ func TestPickLaunchLogsPendingTooLongWithUrgent(t *testing.T) {
 
 	config.InitConfig()
 
-	var logs []*models.LaunchLog
+	var logs []*models2.LaunchLog
 	for i := 0; i <= 10; i++ {
 		// -100, -85, -70, -55, ..., 50
-		log := &models.LaunchLog{
+		log := &models2.LaunchLog{
 			Model: gorm.Model{ID: uint(i), CreatedAt: time.Now().Add(-100 * time.Second).Add(time.Duration(i*15) * time.Second)},
 			Nonce: sql.NullInt64{Valid: true, Int64: int64(i)},
 		}
@@ -135,7 +135,7 @@ func TestPickLaunchLogsPendingTooLongWhenNoLogs(t *testing.T) {
 
 	config.InitConfig()
 
-	var logs []*models.LaunchLog
+	var logs []*models2.LaunchLog
 	resendingLogs := pickLaunchLogsPendingTooLong(logs)
 
 	assert.Len(t, resendingLogs, 0)

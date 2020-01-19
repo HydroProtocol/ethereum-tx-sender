@@ -1,7 +1,7 @@
 package launcher
 
 import (
-	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	models2 "git.ddex.io/infrastructure/ethereum-launcher/internal/models"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,7 +39,7 @@ func (l*launcher)loadLastNonce(from string) int64 {
 
 	nonce := int64(n) - 1
 
-	maxNonceInDB := models.LaunchLogDao.GetAddressMaxNonce(from)
+	maxNonceInDB := models2.LaunchLogDao.GetAddressMaxNonce(from)
 
 	var res int64
 

@@ -3,7 +3,7 @@ package models
 
 import (
 	"database/sql"
-	"git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/messages"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/shopspring/decimal"

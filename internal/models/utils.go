@@ -1,7 +1,7 @@
 package models
 
 import (
-	"git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/messages"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 	"math/rand"

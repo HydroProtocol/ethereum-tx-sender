@@ -1,4 +1,4 @@
-# Ethereum Launcher
+# Ethereum sender
 
 A platform focused on sending transactions to Ethereum. 
   
@@ -16,7 +16,7 @@ Which can not avoid to deal with some tedious problems. For example, what to do 
 - Automatic calculation of gas limit.
 - Get gas price in real time.
 
-## Install & start etherum-launcher
+## Install & start etherum-sender
 
 ### Prerequisites
 
@@ -24,15 +24,15 @@ The only required software that you must have installed are `docker` and `docker
 
 If you don't already have them installed, you can follow [this link](https://docs.docker.com/compose/install/) to install them (free).
 
-### Start a local etherum-launcher
+### Start a local etherum-sender
 
 1.  **Clone this repo**
 
-        git clone https://github.com/hydroprotocol/ethereum-launcher.git
+        git clone https://github.com/hydroprotocol/ethereum-sender.git
 
 1.  **Change your working directory**
 
-        cd ethereum-launcher
+        cd ethereum-sender
 
 1.  **Build and start ethereum-launch**
 
@@ -43,14 +43,14 @@ If you don't already have them installed, you can follow [this link](https://doc
 
     It will use ports `3000`, `6379` and `8545` on your computer. Please make sure theses ports are available.
 
-1.  **Check out your ethereum-launcher**
+1.  **Check out your ethereum-sender**
 
-    Open http://localhost:3000/ on your browser to access ethereum-launcher
+    Open http://localhost:3000/ on your browser to access ethereum-sender
 
 
-### Send transaction by ethereum-launcher
+### Send transaction by ethereum-sender
 
-ethereum-launcher provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](docs/api_docs.md).
+ethereum-sender provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](docs/api_docs.md).
 
 1.   **send a transaction**
 
@@ -89,17 +89,10 @@ ethereum-launcher provide two interface, ``send_transaction`` and ``query_transa
         }
 
 ## Configurations
-You can modify the following environment variables in file `docker-compose.yaml`
-
-   ``DATABASE_URL`` - database to store launch logs   
-   ``ETHEREUM_NODE_URL`` - a ethereum node to send transaction and query transaction receipt  
-   ``MAX_GAS_PRICE_FOR_RETRY`` - the max value of gas price, to prevent infinite gas price increases     
-   ``RETRY_PENDING_SECONDS_THRESHOLD`` - the interval time to speed up the pending transaction  
-   ``RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT`` - the interval time to speed up the urgent pending transaction  
-   ``PRIVATE_KEYS`` - to sign the transactions  
+You can configure ```DATABASE_URL```, ```ETHEREUM_NODE_URL```, ```PRIVATE_KEYS``` environment variables as you need. for details see [envs.md](docs/envs.md).
 
 ## Notice
-- For one address, it is better not to use the launcher to send transactions and send transactions elsewhere, as this will cause problems with nonce
+- For one address, it is better not to use the sender to send transactions and send transactions elsewhere, as this will cause problems with nonce
 - It is best for developers to implement a set of pkm interfaces themselves, of course, a local simplified version of pmk is provided in the project
 
 ## What next
@@ -108,7 +101,7 @@ You can modify the following environment variables in file `docker-compose.yaml`
 
 ## Contributing
 
-1. Fork it (<https://github.com/HydroProtocol/ethereum-launcher/fork>)
+1. Fork it (<https://github.com/HydroProtocol/ethereum-sender/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Commit your changes (`git commit -am 'Add some fooBar'`)
 4. Push to the branch (`git push origin feature/fooBar`)

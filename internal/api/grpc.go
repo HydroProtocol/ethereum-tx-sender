@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 	"fmt"
-	pb "git.ddex.io/infrastructure/ethereum-launcher/messages"
-	"git.ddex.io/infrastructure/ethereum-launcher/models"
+	pb "git.ddex.io/infrastructure/ethereum-launcher/internal/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/models"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"io"

@@ -3,13 +3,12 @@ package watcher
 import (
 	"context"
 	"database/sql"
-	"git.ddex.io/infrastructure/ethereum-launcher/api"
-	"git.ddex.io/infrastructure/ethereum-launcher/messages"
-	"git.ddex.io/infrastructure/ethereum-launcher/signer"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/api"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/signer"
 	"time"
 
-	"git.ddex.io/infrastructure/ethereum-launcher/models"
-	"git.ddex.io/infrastructure/ethereum-launcher/pkm"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/models"
 	"github.com/onrik/ethrpc"
 	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"

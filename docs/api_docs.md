@@ -1,4 +1,4 @@
-Ethereum launcher API document
+Ethereum sender API document
 
 ### send_transaction
 
@@ -42,8 +42,8 @@ Request Data
 | **to**        | receiver of the transaction                  | yes      | string | `0x3eb06f432ae8f518a957852aa44776c234b4a84a` |
 | **value**     | value of the transaction                     | yes      | string | `2000000000000000000` |
 | **data**      | send data of the transaction                 | yes      | string | `[]` |
-| **gas_price** | if empty, launcher will set a rational value | no       | string | `13000000000` |
-| **gas_limit** | if empty, launcher will set a rational value | no       | int    | `30000` |
+| **gas_price** | if empty, sender will set a rational value | no       | string | `13000000000` |
+| **gas_limit** | if empty, sender will set a rational value | no       | int    | `30000` |
 | **item_type** | id of the request system                     | yes      | string | `engine` |
 | **item_id**   | id of the request log                        | yes      | string | `7e36a266-1b32-4eaa-bc95-6d7b47451229` |
 
@@ -60,7 +60,7 @@ Details
 
 | Code  | Status                | Description   |
 | ----- | --------------------- | ------------- |
-| **0** | CREATED               | status when launcher access a new tx|
+| **0** | CREATED               | status when sender access a new tx|
 | **1** | RETRIED               | a final status, when a tx was confirmed, other PENDING txs having the same nonce would turn into RETRIED |
 | **2** | PENDING               | status when tx was successful sent |
 | **3** | SUCCESS               | a final status, when the tx was confirmed on ethereum and successful|
@@ -111,7 +111,7 @@ Request Data
 Details
 
 when you query logs by ``hash``, you will get only one log in response data. when you query logs by ``item_id`` and ``item_type``, you will get a list of logs.
-this is because when the log you sent has been seed up, launcher will resend the log with a larger gas, and the response also contains all the resend logs.
+this is because when the log you sent has been seed up, sender will resend the log with a larger gas, and the response also contains all the resend logs.
 
 Response Data
 
