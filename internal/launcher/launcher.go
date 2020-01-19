@@ -9,6 +9,9 @@ import (
 	"git.ddex.io/infrastructure/ethereum-launcher/internal/gas"
 	"git.ddex.io/infrastructure/ethereum-launcher/internal/messages"
 	models2 "git.ddex.io/infrastructure/ethereum-launcher/internal/models"
+	"git.ddex.io/infrastructure/ethereum-launcher/internal/signer"
+	"github.com/HydroProtocol/hydro-sdk-backend/sdk/crypto"
+	"github.com/HydroProtocol/hydro-sdk-backend/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/onrik/ethrpc"
 	"github.com/shopspring/decimal"
@@ -23,12 +26,12 @@ import (
 
 type launcher struct {
 	ethrpcClient    *ethrpc.EthRPC
-	pkm             signer.Pkm
+	pkm             signer.Signer
 	nonceCache      map[string]int64
 	nonceCacheMutex *sync.Mutex
 }
 
-func (l*launcher)StartSendLoop(ctx context.Context) {
+func (l *launcher) StartSendLoop(ctx context.Context) {
 	logrus.Info("send loop start!")
 
 	for {
@@ -51,7 +54,7 @@ func (l*launcher)StartSendLoop(ctx context.Context) {
 
 		logrus.Infof("%d created log to be send", len(launchLogs))
 
-		normalGasPrice,urgentGasPrice := gas.GetCurrentGasPrice()
+		normalGasPrice, urgentGasPrice := gas.GetCurrentGasPrice()
 
 		for i := 0; i < len(launchLogs); i++ {
 			launchLog := launchLogs[i]
@@ -107,7 +110,7 @@ func (l*launcher)StartSendLoop(ctx context.Context) {
 	}
 }
 
-func (l*launcher)StartRetryLoop(ctx context.Context) {
+func (l *launcher) StartRetryLoop(ctx context.Context) {
 	logrus.Info("retry loop start!")
 
 	pendingStatusName := messages.LaunchLogStatus_PENDING.String()
@@ -207,7 +210,7 @@ func (l*launcher)StartRetryLoop(ctx context.Context) {
 	}
 }
 
-func (l*launcher)sendEthLaunchLogWithGasPrice(launchLog *models2.LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
+func (l *launcher) sendEthLaunchLogWithGasPrice(launchLog *models2.LaunchLog, gasPrice decimal.Decimal) (txHash string, err error) {
 	isNewLog := true
 
 	if launchLog.Nonce.Valid {
@@ -225,9 +228,9 @@ func (l*launcher)sendEthLaunchLogWithGasPrice(launchLog *models2.LaunchLog, gasP
 	t := ethrpc.T{
 		From:     launchLog.From,
 		To:       launchLog.To,
-		Data:     signer.Encode(launchLog.Data),
-		Value:    signer.DecimalToBigInt(launchLog.Value),
-		GasPrice: signer.DecimalToBigInt(gasPrice),
+		Data:     utils.Bytes2HexP(launchLog.Data),
+		Value:    utils.DecimalToBigInt(launchLog.Value),
+		GasPrice: utils.DecimalToBigInt(gasPrice),
 		Nonce:    int(nonce),
 	}
 
@@ -263,7 +266,7 @@ func (l*launcher)sendEthLaunchLogWithGasPrice(launchLog *models2.LaunchLog, gasP
 		return "", fmt.Errorf("sign error %+v", err)
 	}
 
-	hash := signer.EncodeHex(signer.Keccak256(signer.DecodeHex(rawTxHex)))
+	hash := utils.Bytes2HexP(crypto.Keccak256(utils.Hex2Bytes(rawTxHex)))
 
 	launchLog.Hash = sql.NullString{
 		String: hash,
@@ -301,7 +304,7 @@ func (l*launcher)sendEthLaunchLogWithGasPrice(launchLog *models2.LaunchLog, gasP
 	return hash, err
 }
 
-func (l*launcher)tryLoadLaunchLogReceipt(launchLog *models2.LaunchLog) bool {
+func (l *launcher) tryLoadLaunchLogReceipt(launchLog *models2.LaunchLog) bool {
 	receipt, err := l.ethrpcClient.EthGetTransactionReceipt(launchLog.Hash.String)
 
 	if err != nil || receipt == nil || receipt.TransactionHash == "" {

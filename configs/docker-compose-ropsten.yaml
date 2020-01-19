@@ -16,10 +16,10 @@ services:
         max-file: "5"
         max-size: "200m"
         compress: "true"
-  ethereum-launcher:
+  ethereum-tx-sender:
     build: ..
-    container_name: ethereum-launcher
-    image: hydroprotocolio/ethereum-launcher:latest
+    container_name: ethereum-tx-sender
+    image: hydroprotocolio/ethereum-tx-sender:latest
     command: /bin/app
     ports:
       - 127.0.0.1:3000:3000
@@ -27,9 +27,6 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db/postgres?sslmode=disable
       - ETHEREUM_NODE_URL=https://ropsten.infura.io/v3/cabc724fb9534d1bb245582a74ccf3e7
-      - MAX_GAS_PRICE_FOR_RETRY=50000000000
-      - RETRY_PENDING_SECONDS_THRESHOLD=90
-      - RETRY_PENDING_SECONDS_THRESHOLD_FOR_URGENT=45
       - PRIVATE_KEYS=
     depends_on:
       - db

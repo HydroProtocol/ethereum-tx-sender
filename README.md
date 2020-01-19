@@ -1,4 +1,4 @@
-# Ethereum sender
+# Ethereum tx sender
 
 A platform focused on sending transactions to Ethereum. 
   
@@ -16,7 +16,7 @@ Which can not avoid to deal with some tedious problems. For example, what to do 
 - Automatic calculation of gas limit.
 - Get gas price in real time.
 
-## Install & start etherum-sender
+## Install & start ethereum-tx-sender
 
 ### Prerequisites
 
@@ -24,15 +24,15 @@ The only required software that you must have installed are `docker` and `docker
 
 If you don't already have them installed, you can follow [this link](https://docs.docker.com/compose/install/) to install them (free).
 
-### Start a local etherum-sender
+### Start a local ethereum-tx-sender
 
 1.  **Clone this repo**
 
-        git clone https://github.com/hydroprotocol/ethereum-sender.git
+        git clone https://github.com/hydroprotocol/ethereum-tx-sender.git
 
 1.  **Change your working directory**
 
-        cd ethereum-sender
+        cd ethereum-tx-sender
 
 1.  **Build and start ethereum-launch**
 
@@ -43,14 +43,14 @@ If you don't already have them installed, you can follow [this link](https://doc
 
     It will use ports `3000`, `6379` and `8545` on your computer. Please make sure theses ports are available.
 
-1.  **Check out your ethereum-sender**
+1.  **Check out your ethereum-tx-sender**
 
-    Open http://localhost:3000/ on your browser to access ethereum-sender
+    Open http://localhost:3000/ on your browser to access ethereum-tx-sender
 
 
-### Send transaction by ethereum-sender
+### Send transaction by ethereum-tx-sender
 
-ethereum-sender provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](docs/api.md).
+ethereum-tx-sender provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](docs/api.md).
 
 1.   **send a transaction**
 
@@ -101,7 +101,7 @@ You can configure ```DATABASE_URL```, ```ETHEREUM_NODE_URL```, ```PRIVATE_KEYS``
 
 ## Contributing
 
-1. Fork it (<https://github.com/HydroProtocol/ethereum-sender/fork>)
+1. Fork it (<https://github.com/HydroProtocol/ethereum-tx-sender/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Commit your changes (`git commit -am 'Add some fooBar'`)
 4. Push to the branch (`git push origin feature/fooBar`)

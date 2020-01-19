@@ -27,7 +27,7 @@ func run() int {
 	if err != nil {
 		fmt.Println(err.Error())
 		fmt.Println("for details see https://github.com/HydroProtocol/ethereum-sender/blob/master/docs/envs.md")
-		os.Exit(0)
+		return 0
 	}
 
 	ctx, stop := context.WithCancel(context.Background())

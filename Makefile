@@ -1,5 +1,6 @@
 build-ethereum-sender:
 	go mod download
-	go build ./cmd/ethereum-sender -ldflags "-w -linkmode external -extldflags -static" -v -o build/bin/ethereum-sender
+	go build -o bin/app -v -ldflags '-s -w' cmd/ethereum-tx-sender/main.go
+
 
 
