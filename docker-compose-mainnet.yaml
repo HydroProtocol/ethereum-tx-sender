@@ -10,7 +10,6 @@ services:
     restart: always
     volumes:
       - datavolume:/var/lib/postgresql/data
-      - ./models/migrations/0001-init.up.sql:/docker-entrypoint-initdb.d/0001-init.up.sql
     logging: &logging_default
       driver: "json-file"
       options:

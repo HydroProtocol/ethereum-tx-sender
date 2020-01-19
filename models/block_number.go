@@ -1,11 +1,13 @@
 package models
 
-type BlockNumber struct {
-	BlockNumber int `gorm:"column:block_number"`
-}
+import (
+	"github.com/jinzhu/gorm"
+	"strings"
+)
 
-type SetBlockNumberRet struct {
-	BlockNumber int `gorm:"column:setval"`
+type LastBlockNumber struct {
+	gorm.Model
+	BlockNumber int `gorm:"column:last_block_number"`
 }
 
 type blockNumberDao struct{
@@ -18,13 +20,27 @@ func init(){
 }
 
 func (*blockNumberDao) GetCurrentBlockNumber() (int,error) {
-	var lastBlockNumber BlockNumber
-	err := DB.Raw("select last_value as block_number from block_number_serial").Find(&lastBlockNumber).Error
+	var lastBlockNumber LastBlockNumber
+	err := DB.Where("id = 1").First(&lastBlockNumber).Error
+	if err != nil && strings.Contains(err.Error(), "record not found") {
+		return 0, nil
+	}
 	return lastBlockNumber.BlockNumber, err
 }
 
-func (*blockNumberDao) IncreaseBlockNumber(blockNumber int) (int,error) {
-	var setBlockNumberRet SetBlockNumberRet
-	err := DB.Raw("select setval('block_number_serial', ?, true)", blockNumber).Find(&setBlockNumberRet).Error
-	return setBlockNumberRet.BlockNumber, err
+func (*blockNumberDao) IncreaseBlockNumber(blockNumber int) error {
+	var lastBlockNumber LastBlockNumber
+	err := DB.Where("id = 1").First(&lastBlockNumber).Error
+
+	if err != nil && !strings.Contains(err.Error(), "record not found"){
+		return err
+	}
+
+	if lastBlockNumber.ID == 0 {
+		lastBlockNumber = LastBlockNumber{}
+		lastBlockNumber.ID = 1
+	}
+
+	lastBlockNumber.BlockNumber = blockNumber
+	return DB.Save(&lastBlockNumber).Error
 }

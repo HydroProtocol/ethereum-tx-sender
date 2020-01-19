@@ -48,6 +48,8 @@ func ConnectDB(dbUrl string) error {
 
 	DB = _db
 	DB.LogMode(true)
+	DB.AutoMigrate(&LaunchLog{})
+	DB.AutoMigrate(&LastBlockNumber{})
 
 	return nil
 }

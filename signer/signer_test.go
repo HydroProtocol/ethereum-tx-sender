@@ -1,4 +1,4 @@
-package pkm
+package signer
 
 import (
 	"github.com/davecgh/go-spew/spew"
@@ -20,7 +20,7 @@ func TestLocalPKM_Sign(t *testing.T) {
 		Nonce:    5,
 	}
 
-	raw,_:= LocalPKM.Sign(&transaction)
+	raw,_:= LocalSigner.Sign(&transaction)
 	spew.Dump(raw)
 
 

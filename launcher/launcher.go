@@ -24,9 +24,9 @@ import (
 )
 
 type launcher struct {
-	ethrpcClient *ethrpc.EthRPC
-	pkm pkm.Pkm
-	nonceCache map[string]int64
+	ethrpcClient    *ethrpc.EthRPC
+	pkm             signer.Pkm
+	nonceCache      map[string]int64
 	nonceCacheMutex *sync.Mutex
 }
 
@@ -227,9 +227,9 @@ func (l*launcher)sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPr
 	t := ethrpc.T{
 		From:     launchLog.From,
 		To:       launchLog.To,
-		Data:     utils.Encode(launchLog.Data),
-		Value:    utils.DecimalToBigInt(launchLog.Value),
-		GasPrice: utils.DecimalToBigInt(gasPrice),
+		Data:     signer.Encode(launchLog.Data),
+		Value:    signer.DecimalToBigInt(launchLog.Value),
+		GasPrice: signer.DecimalToBigInt(gasPrice),
 		Nonce:    int(nonce),
 	}
 
@@ -265,7 +265,7 @@ func (l*launcher)sendEthLaunchLogWithGasPrice(launchLog *models.LaunchLog, gasPr
 		return "", fmt.Errorf("sign error %+v", err)
 	}
 
-	hash := utils.EncodeHex(utils.Keccak256(utils.DecodeHex(rawTxHex)))
+	hash := signer.EncodeHex(signer.Keccak256(signer.DecodeHex(rawTxHex)))
 
 	launchLog.Hash = sql.NullString{
 		String: hash,
@@ -461,9 +461,9 @@ func pickLaunchLogsPendingTooLong(logs []*models.LaunchLog) (rst []*models.Launc
 
 func StartLauncher(ctx context.Context, ethrpcClient *ethrpc.EthRPC) {
 	l := launcher{
-		ethrpcClient:ethrpcClient,
-		pkm:pkm.InitPKM(config.Config.PrivateKeys),
-		nonceCache:make(map[string]int64),
+		ethrpcClient:    ethrpcClient,
+		pkm:             signer.InitPKM(config.Config.PrivateKeys),
+		nonceCache:      make(map[string]int64),
 		nonceCacheMutex: &sync.Mutex{},
 	}
 

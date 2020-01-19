@@ -1,4 +1,4 @@
-package pkm
+package signer
 
 import (
 	"crypto/ecdsa"
@@ -12,17 +12,17 @@ import (
 	"strings"
 )
 
-type Pkm interface {
+type Signer interface {
 	Sign(t *ethrpc.T) (string, error)
 }
 
-type localPKM struct {
+type localSigner struct {
 	KeyMap map[string]*ecdsa.PrivateKey
 }
 
-var LocalPKM *localPKM
+var LocalSigner *localSigner
 
-func InitPKM(privateKeys string) Pkm {
+func InitPKM(privateKeys string) Signer {
 	privateKeyList := strings.Split(privateKeys, ",")
 
 	keyMap := make(map[string]*ecdsa.PrivateKey)
@@ -38,14 +38,14 @@ func InitPKM(privateKeys string) Pkm {
 		logrus.Infof("parse private key success, public key is %s", publicKey)
 	}
 
-	LocalPKM = &localPKM{
+	LocalSigner = &localSigner{
 		KeyMap: keyMap,
 	}
 
-	return LocalPKM
+	return LocalSigner
 }
 
-func (l localPKM) Sign(t *ethrpc.T) (string, error) {
+func (l localSigner) Sign(t *ethrpc.T) (string, error) {
 	privateKey, ok := l.KeyMap[t.From]
 	if !ok {
 		return "", fmt.Errorf("cannot sign by account %s", t.From)

@@ -101,7 +101,7 @@ func (w *Watcher) saveBlockNumber(blockNum int) error {
 		return nil
 	}
 
-	_, err := models.BlockNumberDao.IncreaseBlockNumber(blockNum)
+	err := models.BlockNumberDao.IncreaseBlockNumber(blockNum)
 
 	if err != nil {
 		logrus.Warnf("save block number %d fail", blockNum)

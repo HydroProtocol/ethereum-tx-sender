@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"git.ddex.io/infrastructure/ethereum-launcher/api"
 	"git.ddex.io/infrastructure/ethereum-launcher/messages"
+	"git.ddex.io/infrastructure/ethereum-launcher/signer"
 	"time"
 
 	"git.ddex.io/infrastructure/ethereum-launcher/models"
@@ -22,13 +23,13 @@ const user2 = "0x31ebd457b999bf99759602f5ece5aa5033cb56b3"
 const user3 = "0x3eb06f432ae8f518a957852aa44776c234b4a84a"
 
 func TestNewWatcher(t *testing.T) {
-	// docker-compose -f docker-db-eth-node.yaml down -v
-	// docker-compose -f docker-compose-localhost-source.yaml up db ethereum-node
+	// docker-compose -f docker-compose.yaml down -v
+	// docker-compose -f docker-compose.yaml up db ethereum-node
 	api.InitSubscribeHub()
 	ethrpcClient := ethrpc.New("http://localhost:8545")
 	_ = models.ConnectDB("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
 
-	pkm.InitPKM("b7a0c9d2786fc4dd080ea5d619d36771aeb0c8c26c290afd3451b92ba2b7bc2c")
+	signer.InitPKM("b7a0c9d2786fc4dd080ea5d619d36771aeb0c8c26c290afd3451b92ba2b7bc2c")
 
 	balanceUser2, _:= ethrpcClient.EthGetBalance(user2, "latest")
 	balanceUser3, _:= ethrpcClient.EthGetBalance(user3,"latest")
@@ -50,7 +51,7 @@ func TestNewWatcher(t *testing.T) {
 		Nonce:    nonce,
 	}
 
-	raw,err:= pkm.LocalPKM.Sign(&transaction)
+	raw,err:= signer.LocalPKM.Sign(&transaction)
 	assert.Nil(t, err)
 	hash, err := ethrpcClient.EthSendRawTransaction(raw)
 	assert.Nil(t, err)
