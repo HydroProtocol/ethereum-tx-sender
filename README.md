@@ -50,7 +50,7 @@ If you don't already have them installed, you can follow [this link](https://doc
 
 ### Send transaction by ethereum-sender
 
-ethereum-sender provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](docs/api_docs.md).
+ethereum-sender provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](docs/api.md).
 
 1.   **send a transaction**
 
