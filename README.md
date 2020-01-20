@@ -74,7 +74,7 @@ ethereum-tx-sender provide two interface, ``send_transaction`` and ``query_trans
 1.  **query transaction result**
 
         // send request
-        curl -X GET http://localhost:3001/launch_logs -d \
+        curl -X GET http://localhost:3000/launch_logs -d \
         '{
             "hash": "0x7572578cc4cf3e7c897811d48b65e01e7a5544a325acfdea831887d8a1a5703b",
             "item_id": "7e36a266-1b32-4eaa-bc95-6d7b4745122e",
