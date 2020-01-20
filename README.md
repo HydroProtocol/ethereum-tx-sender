@@ -36,12 +36,12 @@ If you don't already have them installed, you can follow [this link](https://doc
 
 1.  **Build and start ethereum-launch**
 
-        docker-compose pull && docker-compose up -d
+        docker-compose -f configs/docker-compose.yaml pull && docker-compose -f configs/docker-compose.yaml up -d
 
     This step may takes a few minutes.
     When complete, it will start all necessary services.
 
-    It will use ports `3000`, `6379` and `8545` on your computer. Please make sure theses ports are available.
+    It will use ports `3000`, `5432` and `8545` on your computer. Please make sure theses ports are available.
 
 1.  **Check out your ethereum-tx-sender**
 
