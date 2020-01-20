@@ -57,35 +57,54 @@ ethereum-tx-sender provide two interface, ``send_transaction`` and ``query_trans
          // send request 
          curl -X POST http://localhost:3000/launch_logs -d \
          '{
-            "from": "0x31ebd457b999bf99759602f5ece5aa5033cb56b3",
-            "to": "0xd088fc0f4d5e68a3bb3d902b276ce45c598f858c",
-            "value": "1000000000000000000",
-            "data": [],
-            "item_type": "engine",
-            "item_id": "7e36a266-1b32-4eaa-bc95-6d7b4745122e",
+           "from": "0x31ebd457b999bf99759602f5ece5aa5033cb56b3",
+           "to": "0x3eb06f432ae8f518a957852aa44776c234b4a84a",
+           "value": "2000000000000000000",
+           "data": [],
+           "item_type": "engine",
+           "item_id": "7e36a266-1b32-4eaa-bc95-6d7b47451221"
          }'
 
          // response
          {
-            "status": 0,
-            "err_msg":"",
-            "data":"",
+           "status": 0,
+           "desc": "success",
+           "data": {
+             "data": {
+               "hash": "0x20f1b07522f385e84e8f75f99b3e2d7b22d915bc735824336d662bcbae7e542a",
+               "item_type": "engine",
+               "item_id": "7e36a266-1b32-4eaa-bc95-6d7b47451221",
+               "status": 2,
+               "gas_price": "13000000000",
+               "gas_limit": "25200"
+             }
+           }
          }
 1.  **query transaction result**
 
         // send request
         curl -X GET http://localhost:3000/launch_logs -d \
         '{
-            "hash": "0x7572578cc4cf3e7c897811d48b65e01e7a5544a325acfdea831887d8a1a5703b",
-            "item_id": "7e36a266-1b32-4eaa-bc95-6d7b4745122e",
-            "item_tyep": "engine",
+            "hash": "0x20f1b07522f385e84e8f75f99b3e2d7b22d915bc735824336d662bcbae7e542a",
          }'
 
         // response
         {
-           "status":"",
-           "err_msg":"",
-           "data":"",
+          "status": 0,
+          "desc": "success",
+          "data": {
+            "data": [
+              {
+                "hash": "0x20f1b07522f385e84e8f75f99b3e2d7b22d915bc735824336d662bcbae7e542a",
+                "item_type": "engine",
+                "item_id": "7e36a266-1b32-4eaa-bc95-6d7b47451221",
+                "status": 3,
+                "gas_price": "13000000000",
+                "gas_used": 21000,
+                "executed_at": 1579542180
+              }
+            ]
+          }
         }
 
 ## Configurations
