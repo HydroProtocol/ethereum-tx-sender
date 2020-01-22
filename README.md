@@ -1,26 +1,27 @@
 # Ethereum tx sender
 
-A platform focused on sending transactions to Ethereum. 
+An interface for creating and sending transactions on the [Ethereum Blockchain](https://ethereum.org/). 
   
-  For the developer or team of an Ethereum dapp, sending transactions to the Ethereum blockchain must be an essential link.
-Which can not avoid to deal with some tedious problems. For example, what to do if the sent transaction was blocked, the nonce is wrong, the amount of gas used is relatively reasonable, and the status of the transaction is synchronized in time.
+  Ethereum dApps are applications which use the Ethereum Blockchain. These dApps need to automatically create and send blockchain transactions as an essential part of the user experience.
+Dynamically creating and sending blockchain transactions consistently is actually quite complex, with a number of challenging nuances. For example, sent transactions can be blocked, the nonce supplied by the user's wallet could be wrong, the gas settings need to be relatively reasonable, etc. These are essential things that every dApp developer needs to address.
   
-  The purpose of this system is to help developers solve these problems and allow developers to focus more on business logic.
+  The purpose of this system is to provide a ready-to-use interface for creating and sending transactions on Ethereum, allowing developers to focus on their core business logic rather than deal with blockchain complications.
 
 ## Features:
 
-- Accept the encapsulated Ethereum transaction request and send it to Ethereum, and synchronize the transaction status.
+- Accepts encapsulated Ethereum transaction requests and send it to the blockchain.
+- Synchronizes transaction status.
 - Query the status of sent transactions.
-- Internal nonce management, set nonce automatically and orderly.
-- Speed up transactions. When transactions are congested, gas will be resent according to network adjustments.
-- Automatic calculation of gas limit.
-- Get gas price in real time.
+- Internal nonce management (automatic nonce settings)
+- Speed up transactions. When transactions are congested, tx's can be automatically resubmitted with higher gas prices.
+- Automatic calculation of the transaction's appropriate gas limit.
+- Get an appropriate gas price in real time.
 
 ## Install & start ethereum-tx-sender
 
 ### Prerequisites
 
-The only required software that you must have installed are `docker` and `docker-compose`.
+The only required software to run the ethereum-tx-sender are `docker` and `docker-compose`.
 
 If you don't already have them installed, you can follow [this link](https://docs.docker.com/compose/install/) to install them (free).
 
@@ -39,20 +40,20 @@ If you don't already have them installed, you can follow [this link](https://doc
         docker-compose -f configs/docker-compose.yaml pull && docker-compose -f configs/docker-compose.yaml up -d
 
     This step may takes a few minutes.
-    When complete, it will start all necessary services.
+    When complete, it will start all the necessary services.
 
-    It will use ports `3000`, `5432` and `8545` on your computer. Please make sure theses ports are available.
+    It will use ports `3000`, `5432` and `8545` on your computer. Please make sure these ports are available.
 
 1.  **Check out your ethereum-tx-sender**
 
-    Open http://localhost:3000/ on your browser to access ethereum-tx-sender
+    Open http://localhost:3000/ on your browser to access your ethereum-tx-sender
 
 
 ### Send transaction by ethereum-tx-sender
 
-ethereum-tx-sender provide two interface, ``send_transaction`` and ``query_transaction`` for details see [api doc](docs/api.md).
+ethereum-tx-sender comes with two interfaces: ``send_transaction`` and ``query_transaction``. For more details see [api doc](docs/api.md).
 
-1.   **send a transaction**
+1.   **sending a transaction**
 
          // send request 
          curl -X POST http://localhost:3000/launch_logs -d \
@@ -80,7 +81,7 @@ ethereum-tx-sender provide two interface, ``send_transaction`` and ``query_trans
              }
            }
          }
-1.  **query transaction result**
+1.  **querying a transaction result**
 
         // send request
         curl -X GET http://localhost:3000/launch_logs -d \
@@ -108,11 +109,12 @@ ethereum-tx-sender provide two interface, ``send_transaction`` and ``query_trans
         }
 
 ## Configurations
-You can configure ```DATABASE_URL```, ```ETHEREUM_NODE_URL```, ```PRIVATE_KEYS``` environment variables as you need. for details see [envs.md](docs/envs.md).
+You can configure ```DATABASE_URL```, ```ETHEREUM_NODE_URL```, ```PRIVATE_KEYS``` environment variables as you need. For details see [envs.md](docs/envs.md).
 
 ## Notice
-- For one address, it is better not to use the sender to send transactions and send transactions elsewhere, as this will cause problems with nonce
-- It is best for developers to implement a set of pkm interfaces themselves, of course, a local simplified version of pmk is provided in the project
+- Nonce problems can occur if you send transactions with an address using other tx services in addition to this project. Once you start using this project for a given address, it's best to not use other transaction sending services for that same address, or you may encounter a nonce issue.
+- It is best for developers to implement a set of private key managemenet (pkm) interfaces themselves. However, a local simplified version of pkm is provided in this project for ease for use.
+
 
 ## What next
 - A management background
