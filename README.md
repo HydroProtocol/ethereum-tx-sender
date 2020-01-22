@@ -35,7 +35,7 @@ If you don't already have them installed, you can follow [this link](https://doc
 
         cd ethereum-tx-sender
 
-1.  **Build and start ethereum-launch**
+1.  **Build and start**
 
         docker-compose -f configs/docker-compose.yaml pull && docker-compose -f configs/docker-compose.yaml up -d
 
